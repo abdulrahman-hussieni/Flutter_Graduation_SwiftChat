@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:graduation_swiftchat/config/images.dart';
+import 'package:get/get.dart';
+import 'package:graduation_swiftchat/Config/Images.dart';
 
-class ChatTile extends StatefulWidget {
+import '../../../controllers/chat_controller.dart';
+
+class ChatTile extends StatelessWidget {
   final String imageUrl;
   final String name;
   final String lastChat;
   final String lastTime;
-  const ChatTile({
-    super.key,
-    required this.imageUrl,
-    required this.name,
-    required this.lastChat,
-    required this.lastTime,
-  });
+  final String unReadMessageCount;
+  const ChatTile(
+      {super.key,
+        required this.imageUrl,
+        required this.name,
+        required this.lastChat,
+        required this.lastTime,
+        this.unReadMessageCount = "0"});
 
-  @override
-  State<ChatTile> createState() => _ChatTileState();
-}
-
-class _ChatTileState extends State<ChatTile> {
   @override
   Widget build(BuildContext context) {
+    ChatController chatController = Get.put(ChatController());
     return Container(
       margin: EdgeInsets.only(bottom: 10),
       padding: EdgeInsets.all(10),
@@ -31,27 +31,82 @@ class _ChatTileState extends State<ChatTile> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  height: 70,
+                  width: 70,
+                  child: ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      // child: CachedNetworkImage(
+                      //   imageUrl: imageUrl,
+                      //   fit: BoxFit.cover,
+                      //   width: 70,
+                      //   placeholder: (context, url) =>
+                      //       CircularProgressIndicator(),
+                      //   errorWidget: (context, url, error) => Icon(Icons.error),
+                      // ),
+                    child:  Image.asset(imageUrl, width: 70),
+                  ),
+                ),
+                SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      SizedBox(height: 5),
+                      Text(
+                        lastChat,
+                        maxLines: 1,
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
             children: [
-              Image.asset(widget.imageUrl, width: 70),
-              SizedBox(width: 15),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.name,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    widget.lastChat,
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                ],
+              // StreamBuilder(
+              //   stream: chatController.getUnreadMessageCount(
+              //       "Mp6yiJWt2RWzK5DFPZmroN843xX29SjvS2o0BJfBa80D2CWh2SgazMi1"),
+              //   builder: (context, snapshot) {
+              //     if (snapshot.hasData && snapshot.data == 0) {
+              //       return Container();
+              //     }
+              //     return Container(
+              //       width: 20,
+              //       height: 20,
+              //       decoration: BoxDecoration(
+              //         borderRadius: BorderRadius.circular(100),
+              //         color: Theme.of(context).colorScheme.primary,
+              //       ),
+              //       child: Center(
+              //         child: Text(
+              //           snapshot.data.toString(),
+              //           style: Theme.of(context)
+              //               .textTheme
+              //               .labelMedium
+              //               ?.copyWith(
+              //                 color: Theme.of(context).colorScheme.onBackground,
+              //               ),
+              //         ),
+              //       ),
+              //     );
+              //   },
+              // ),
+              Text(
+                lastTime,
+                style: Theme.of(context).textTheme.labelMedium,
               ),
             ],
           ),
-          Text(widget.lastTime, style: Theme.of(context).textTheme.labelMedium),
         ],
       ),
     );

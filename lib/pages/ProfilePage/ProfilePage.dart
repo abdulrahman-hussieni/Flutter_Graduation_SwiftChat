@@ -11,6 +11,7 @@ import 'package:graduation_swiftchat/controllers/AuthController.dart';
 import 'package:graduation_swiftchat/controllers/ProfileController.dart';
 import 'package:graduation_swiftchat/controllers/image_picker_controller.dart';
 import 'package:graduation_swiftchat/widgets/PrimaryButton.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -78,7 +79,7 @@ class ProfilePage extends StatelessWidget {
                                       onTap: () async {
                                         imagePath.value =
                                             await imagePickerController
-                                                .pickImage();
+                                                .pickImage(ImageSource.gallery);
                                         print("Image Picked" + imagePath.value);
                                       },
                                       child: Container(

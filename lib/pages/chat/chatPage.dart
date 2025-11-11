@@ -1,22 +1,17 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/get_navigation.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:graduation_swiftchat/Config/Images.dart';
 import 'package:graduation_swiftchat/pages/chat/widgets/chatbubble.dart';
 import 'package:graduation_swiftchat/pages/chat/widgets/type_message.dart';
 import 'package:intl/intl.dart';
 
-import '../../Config/Images.dart';
 import '../../controllers/ProfileController.dart';
 import '../../controllers/chat_controller.dart';
 import '../../models/user_model.dart';
 
 class ChatPage extends StatelessWidget {
   final UserModel userModel;
-
   const ChatPage({super.key, required this.userModel});
 
   @override
@@ -37,23 +32,18 @@ class ChatPage extends StatelessWidget {
           },
           child: Padding(
             padding: const EdgeInsets.all(5),
-            child: CircleAvatar(
-              radius: 25,
-              backgroundColor: Colors.grey[300],
-              child:
-                  (userModel.profileImage != null &&
-                      userModel.profileImage!.isNotEmpty)
-                  ? ClipOval(
-                      child: Image.file(
-                        File(userModel.profileImage!),
-                        fit: BoxFit.cover,
-                        width: 50,
-                        height: 50,
-                      ),
-                    )
-                  : Center(
-                      child: Icon(Icons.add, size: 30, color: Colors.grey[700]),
-                    ),
+            child: Container(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(100),
+                child: Image.asset(AssetsImage.boyPic,fit: BoxFit.cover),
+                // child: CachedNetworkImage(
+                //   imageUrl:
+                //   userModel.profileImage ?? AssetsImage.defaultProfileUrl,
+                //   fit: BoxFit.cover,
+                //   placeholder: (context, url) => CircularProgressIndicator(),
+                //   errorWidget: (context, url, error) => Icon(Icons.error),
+                // ),
+              ),
             ),
           ),
         ),
@@ -70,10 +60,8 @@ class ChatPage extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    userModel.name ?? "User",
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
+                  Text(userModel.name ?? "User",
+                      style: Theme.of(context).textTheme.bodyLarge),
                   StreamBuilder(
                     stream: chatController.getStatus(userModel.id!),
                     builder: (context, snapshot) {
@@ -91,7 +79,7 @@ class ChatPage extends StatelessWidget {
                         );
                       }
                     },
-                  ),
+                  )
                 ],
               ),
             ],
@@ -104,7 +92,9 @@ class ChatPage extends StatelessWidget {
               // callController.callAction(
               //     userModel, profileController.currentUser.value, "audio");
             },
-            icon: Icon(Icons.phone),
+            icon: Icon(
+              Icons.phone,
+            ),
           ),
           IconButton(
             onPressed: () {
@@ -112,8 +102,10 @@ class ChatPage extends StatelessWidget {
               // callController.callAction(
               //     userModel, profileController.currentUser.value, "video");
             },
-            icon: Icon(Icons.video_call),
-          ),
+            icon: Icon(
+              Icons.video_call,
+            ),
+          )
         ],
       ),
       body: Padding(
@@ -127,33 +119,37 @@ class ChatPage extends StatelessWidget {
                     stream: chatController.getMessages(userModel.id!),
                     builder: (context, snapshot) {
                       var roomid = chatController.getRoomId(userModel.id!);
-                      // chatController.markMessagesAsRead(roomid!);
+                      chatController.markMessagesAsRead(roomid!);
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
                       }
                       if (snapshot.hasError) {
-                        return Center(child: Text("Error: ${snapshot.error}"));
+                        return Center(
+                          child: Text("Error: ${snapshot.error}"),
+                        );
                       }
                       if (snapshot.data == null) {
-                        return const Center(child: Text("No Messages"));
+                        return const Center(
+                          child: Text("No Messages"),
+                        );
                       } else {
                         return ListView.builder(
                           reverse: true,
                           itemCount: snapshot.data!.length,
                           itemBuilder: (context, index) {
                             DateTime timestamp = DateTime.parse(
-                              snapshot.data![index].timestamp!,
-                            );
+                                snapshot.data![index].timestamp!);
                             String formattedTime =
                             DateFormat('hh:mm a').format(timestamp);
+
                             return ChatBubble(
                               message: snapshot.data![index].message!,
-                              imageURL: snapshot.data![index].imageUrl ?? "",
-                              isComming:
-                                  snapshot.data![index].receiverId ==
+                              imageUrl: snapshot.data![index].imageUrl ?? "",
+                              isComming: snapshot.data![index].receiverId ==
                                   profileController.currentUser.value!.id,
-                              // status: snapshot.data![index].readStatus!,
-                              status: 'read',
+                              status: snapshot.data![index].readStatus!,
                               time: formattedTime,
                             );
                           },
@@ -162,48 +158,45 @@ class ChatPage extends StatelessWidget {
                     },
                   ),
                   Obx(
-                    () => (chatController.selectedImagePath.value != "")
+                        () => (chatController.selectedImagePath.value != "")
                         ? Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Stack(
-                              children: [
-                                Container(
-                                  margin: EdgeInsets.only(bottom: 10),
-                                  decoration: BoxDecoration(
-                                    image: DecorationImage(
-                                      image: FileImage(
-                                        File(
-                                          chatController
-                                              .selectedImagePath
-                                              .value,
-                                        ),
-                                      ),
-                                      fit: BoxFit.contain,
-                                    ),
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primaryContainer,
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                  height: 500,
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Stack(
+                        children: [
+                          Container(
+                            margin: EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              image: DecorationImage(
+                                image: FileImage(
+                                  File(chatController
+                                      .selectedImagePath.value),
                                 ),
-                                Positioned(
-                                  right: 0,
-                                  child: IconButton(
-                                    onPressed: () {
-                                      chatController.selectedImagePath.value =
-                                          "";
-                                    },
-                                    icon: Icon(Icons.close),
-                                  ),
-                                ),
-                              ],
+                                fit: BoxFit.contain,
+                              ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer,
+                              borderRadius: BorderRadius.circular(15),
                             ),
-                          )
+                            height: 500,
+                          ),
+                          Positioned(
+                            right: 0,
+                            child: IconButton(
+                              onPressed: () {
+                                chatController.selectedImagePath.value =
+                                "";
+                              },
+                              icon: Icon(Icons.close),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                         : Container(),
-                  ),
+                  )
                 ],
               ),
             ),

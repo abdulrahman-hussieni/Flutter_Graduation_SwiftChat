@@ -5,6 +5,7 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:graduation_swiftchat/models/user_model.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'image_picker_controller.dart';
 
@@ -61,7 +62,7 @@ class ProfileController extends GetxController {
       if (imageUrl.isEmpty) {
         // Pick image from local storage
         final imagePickerController = Get.put(ImagePickerController());
-        imagePath = await imagePickerController.pickImage();
+        imagePath = await imagePickerController.pickImage(ImageSource.gallery);
       }
       // If imagePath is not empty, return it as the local file path
       if (imagePath != null && imagePath.isNotEmpty) {

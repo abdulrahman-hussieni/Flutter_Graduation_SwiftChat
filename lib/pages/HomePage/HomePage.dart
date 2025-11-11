@@ -1,14 +1,14 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:graduation_swiftchat/config/images.dart';
-import 'package:graduation_swiftchat/config/srtings.dart';
-import 'package:graduation_swiftchat/controllers/ProfileController.dart';
-import 'package:graduation_swiftchat/controllers/image_picker_controller.dart';
 import 'package:graduation_swiftchat/pages/HomePage/Widgets/ChatsList.dart';
-import 'package:graduation_swiftchat/pages/HomePage/Widgets/TabPar.dart';
+import '../../Config/Images.dart';
+import '../../config/srtings.dart';
+import '../../controllers/ProfileController.dart';
+import '../../controllers/contact_controller.dart';
+import '../../controllers/image_picker_controller.dart';
+import '../ProfilePage/ProfilePage.dart';
+import 'Widgets/TabPar.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,17 +18,17 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
   @override
   Widget build(BuildContext context) {
+    TabController tabController = TabController(length: 3, vsync: this);
     ProfileController profileController = Get.put(ProfileController());
+    ContactController contactController = Get.put(ContactController());
+    ImagePickerController imagePickerController =
+    Get.put(ImagePickerController());
+    // StatusController statusController = Get.put(StatusController());
+    // CallController callController = Get.put(CallController());
+    // AppController appController = Get.put(AppController());
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
@@ -40,34 +40,33 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           padding: const EdgeInsets.all(8.0),
           child: SvgPicture.asset(
             AssetsImage.appIconSVG,
-            width: 30,
-            height: 30,
-            fit: BoxFit.contain,
           ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.search),
             onPressed: () {
-              // Handle search action
+              // appController.checkLatestVersion();
             },
+            icon: Icon(
+              Icons.search,
+            ),
           ),
           IconButton(
-            icon: Icon(Icons.more_vert),
             onPressed: () async {
-              await profileController.getUserDetails();
-              // Handle more options action
-              Get.toNamed('/Profilepage');
+              Get.to(ProfilePage());
             },
-          ),
+            icon: Icon(
+              Icons.more_vert,
+            ),
+          )
         ],
-        bottom: myTabBar(tabController: _tabController, context: context),
+        bottom: myTabBar(tabController: tabController,context: context),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Theme.of(context).colorScheme.primary,
         onPressed: () {
-          Get.toNamed('/contactPage');
+          Get.toNamed("/contactPage");
         },
+        backgroundColor: Theme.of(context).colorScheme.primary,
         child: Icon(
           Icons.add,
           color: Theme.of(context).colorScheme.onBackground,
@@ -76,7 +75,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: TabBarView(
-          controller: _tabController,
+          controller: tabController,
           children: [
             ChatListWidget(),
             Center(child: Text("Groups Page")),

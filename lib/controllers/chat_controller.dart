@@ -1,9 +1,12 @@
+// ignore_for_file: override_on_non_overriding_member, avoid_print
+
 import 'dart:ffi';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:graduation_swiftchat/Config/Images.dart';
+import 'package:graduation_swiftchat/models/call_model.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
@@ -51,65 +54,7 @@ class ChatController extends GetxController {
       return currentUser;
     }
   }
-  // Future<void> sendMessage(
-  //     String targetUserId, String message, UserModel targetUser) async {
-  //   isLoading.value = true;
-  //   String chatId = uuid.v6();
-  //   String roomId = getRoomId(targetUserId);
-  //   DateTime timestamp = DateTime.now();
-  //   String nowTime = DateFormat('hh:mm a').format(timestamp);
-  //
-  //   UserModel sender =
-  //   getSender(profileController.currentUser.value!, targetUser);
-  //   UserModel receiver =
-  //   getReciver(profileController.currentUser.value!, targetUser);
-  //
-  //
-  //   var newChat = ChatModel(
-  //     id: chatId,
-  //     message: message,
-  //     imageUrl: '', // Todo this is must be read from the device and it's already uploaded to firebase storage
-  //     senderId: auth.currentUser!.uid,
-  //     receiverId: targetUserId,
-  //     senderName: profileController.currentUser.value?.name,
-  //     timestamp: DateTime.now().toString(),
-  //     readStatus: "unread",
-  //   );
-  //
-  //   var roomDetails = ChatRoomModel(
-  //     id: roomId,
-  //     lastMessage: message,
-  //     lastMessageTimestamp: nowTime,
-  //     sender: sender,
-  //     receiver: receiver,
-  //     timestamp: DateTime.now().toString(),
-  //     unReadMessNo: 0,
-  //   );
-  //
-  //   try {
-  //     // ✅ Save the message
-  //     await db
-  //         .collection("chats")
-  //         .doc(roomId)
-  //         .collection("messages")
-  //         .doc(chatId)
-  //         .set(newChat.toJson());
-  //
-  //     // ✅ Save or update the chat room info
-  //     await db.collection("chats").doc(roomId).set(
-  //       roomDetails.toJson(),
-  //       SetOptions(merge: true), // don't overwrite old chats
-  //     );
-  //
-  //     // ✅ Add to contacts
-  //     await contactController.saveContact(targetUser);
-  //
-  //   } catch (e) {
-  //     print("❌ Error while sending message: $e");
-  //   }
-  //
-  //   isLoading.value = false;
-  // }
+
   Future<void> sendMessage(
       String targetUserId, String message, UserModel targetUser) async {
     isLoading.value = true;
@@ -119,16 +64,14 @@ class ChatController extends GetxController {
     String nowTime = DateFormat('hh:mm a').format(timestamp);
 
     UserModel sender =
-    getSender(profileController.currentUser.value!, targetUser);
+        getSender(profileController.currentUser.value!, targetUser);
     UserModel receiver =
-    getReciver(profileController.currentUser.value!, targetUser);
+        getReciver(profileController.currentUser.value!, targetUser);
 
     RxString imageUrl = "".obs;
     if (selectedImagePath.value.isNotEmpty) {
-      // imageUrl.value =
-      // await profileController.uploadFileToFirebase(selectedImagePath.value);
-      imageUrl.value = AssetsImage.boyPic;
-      print ('image stored at ${imageUrl.value}');
+      imageUrl.value =
+          await profileController.uploadFileToLocalStorage(selectedImagePath.value);
     }
     var newChat = ChatModel(
       id: chatId,
@@ -157,12 +100,12 @@ class ChatController extends GetxController {
           .collection("messages")
           .doc(chatId)
           .set(
-        newChat.toJson(),
-      );
+            newChat.toJson(),
+          );
       selectedImagePath.value = "";
       await db.collection("chats").doc(roomId).set(
-        roomDetails.toJson(),
-      );
+            roomDetails.toJson(),
+          );
       await contactController.saveContact(targetUser);
     } catch (e) {
       print(e);
@@ -180,46 +123,46 @@ class ChatController extends GetxController {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-          .map(
-            (doc) => ChatModel.fromJson(doc.data()),
-      )
-          .toList(),
-    );
+              .map(
+                (doc) => ChatModel.fromJson(doc.data()),
+              )
+              .toList(),
+        );
   }
 
   Stream<UserModel> getStatus(String uid) {
     return db.collection('users').doc(uid).snapshots().map(
-          (event) {
+      (event) {
         return UserModel.fromJson(event.data()!);
       },
     );
   }
 
-  // Stream<List<CallModel>> getCalls() {
-  //   return db
-  //       .collection("users")
-  //       .doc(auth.currentUser!.uid)
-  //       .collection("calls")
-  //       .orderBy("timestamp", descending: true)
-  //       .snapshots()
-  //       .map(
-  //         (snapshot) => snapshot.docs
-  //         .map(
-  //           (doc) => CallModel.fromJson(doc.data()),
-  //     )
-  //         .toList(),
-  //   );
-  // }
+  Stream<List<CallModel>> getCalls() {
+    return db
+        .collection("users")
+        .doc(auth.currentUser!.uid)
+        .collection("calls")
+        .orderBy("timestamp", descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => CallModel.fromJson(doc.data()),
+              )
+              .toList(),
+        );
+  }
 
   Stream<int> getUnreadMessageCount(
-      String roomId,
-      ) {
+    String roomId,
+  ) {
     return db
         .collection("chats")
         .doc(roomId)
         .collection("messages")
         .where("readStatus", isEqualTo: "unread")
-        .where("senderId", isNotEqualTo: profileController.currentUser.value!.id)
+        .where("senderId", isNotEqualTo: profileController.currentUser.value?.id)
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
@@ -233,9 +176,9 @@ class ChatController extends GetxController {
         .get();
 
     for (QueryDocumentSnapshot<Map<String, dynamic>> messageDoc
-    in messagesSnapshot.docs) {
+        in messagesSnapshot.docs) {
       String senderId = messageDoc.data()["senderId"];
-      if (senderId != profileController.currentUser.value!.id) {
+      if (senderId != profileController.currentUser.value?.id) {
         await db
             .collection("chats")
             .doc(roomId)

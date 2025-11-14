@@ -4,7 +4,8 @@ import 'package:get/get.dart';
 class SplashController extends GetxController {
 final auth = FirebaseAuth.instance;
 
-void onInit() {
+@override
+  void onInit() {
   super.onInit();
   splashHandler();
 }

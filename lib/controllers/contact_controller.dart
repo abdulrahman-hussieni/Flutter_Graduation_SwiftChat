@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_interpolation_to_compose_strings
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -65,6 +67,8 @@ class ContactController extends GetxController {
       print("✅ Filtered chats count: ${chatList.length}");
       return chatList;
     });
+
+    
   }
 
 
@@ -84,7 +88,7 @@ class ContactController extends GetxController {
   //   return tempChatRoom;
   // }
 
-  Future<void> saveContact(UserModel user) async {
+ Future<void> saveContact(UserModel user) async {
     try {
       await db
           .collection("users")

@@ -1,3 +1,5 @@
+// ignore_for_file: non_constant_identifier_names, deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';

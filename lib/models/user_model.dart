@@ -1,3 +1,5 @@
+// ignore_for_file: no_leading_underscores_for_local_identifiers
+
 class UserModel {
   String? id;
   String? name;
@@ -5,13 +7,11 @@ class UserModel {
   String? profileImage;
   String? phoneNumber;
   String? about;
-  DateTime? createdAt;
-  DateTime? lastOnline;
-  String? status; // online, offline, away, busy
-  //about
-  //created at
-  //lastOnLineStatus
-  //status
+  String? createdAt;
+  String? lastOnlineStatus;
+  String? status;
+  String? role;
+
   UserModel({
     this.id,
     this.name,
@@ -20,40 +20,36 @@ class UserModel {
     this.phoneNumber,
     this.about,
     this.createdAt,
-    this.lastOnline,
+    this.lastOnlineStatus,
     this.status,
+    this.role,
   });
 
-  // Factory constructor to create UserModel from JSON
   UserModel.fromJson(Map<String, dynamic> json) {
     id = json["id"];
     name = json["name"];
     email = json["email"];
     profileImage = json["profileImage"];
     phoneNumber = json["phoneNumber"];
-    about = json["about"];
-    createdAt = json["createdAt"] != null
-        ? DateTime.parse(json["createdAt"])
-        : null;
-    lastOnline = json["lastOnline"] != null
-        ? DateTime.parse(json["lastOnline"])  
-        : null;
-    status = json["status"];
-
+    about = json["About"];
+    createdAt = json["CreatedAt"];
+    lastOnlineStatus = json["LastOnlineStatus"];
+    status = json["Status"];
+    role = json["role"];
   }
 
-  // Method to convert UserModel to JSON
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data["id"] = id;
-    data["name"] = name;
-    data["email"] = email;
-    data["profileImage"] = profileImage;
-    data["phoneNumber"] = phoneNumber;
-    data["about"] = about;
-    data["createdAt"] = createdAt?.toIso8601String();
-    data["lastOnline"] = lastOnline?.toIso8601String();
-    data["status"] = status;
-    return data;
+    final Map<String, dynamic> _data = <String, dynamic>{};
+    _data["id"] = id;
+    _data["name"] = name;
+    _data["email"] = email;
+    _data["profileImage"] = profileImage;
+    _data["phoneNumber"] = phoneNumber;
+    _data["About"] = about;
+    _data["CreatedAt"] = createdAt;
+    _data["LastOnlineStatus"] = lastOnlineStatus;
+    _data["Status"] = status;
+    _data["role"] = role;
+    return _data;
   }
 }

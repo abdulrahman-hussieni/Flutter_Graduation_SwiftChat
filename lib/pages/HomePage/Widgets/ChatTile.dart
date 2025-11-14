@@ -1,8 +1,9 @@
+// ignore_for_file: unused_local_variable
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:graduation_swiftchat/Config/Images.dart';
-
-import '../../../controllers/chat_controller.dart';
+import 'package:graduation_swiftchat/controllers/chat_controller.dart';
 
 class ChatTile extends StatelessWidget {
   final String imageUrl;
@@ -12,11 +13,11 @@ class ChatTile extends StatelessWidget {
   final String unReadMessageCount;
   const ChatTile(
       {super.key,
-        required this.imageUrl,
-        required this.name,
-        required this.lastChat,
-        required this.lastTime,
-        this.unReadMessageCount = "0"});
+      required this.imageUrl,
+      required this.name,
+      required this.lastChat,
+      required this.lastTime,
+      this.unReadMessageCount = "0"});
 
   @override
   Widget build(BuildContext context) {
@@ -39,16 +40,14 @@ class ChatTile extends StatelessWidget {
                   width: 70,
                   child: ClipRRect(
                       borderRadius: BorderRadius.circular(100),
-                      // child: CachedNetworkImage(
-                      //   imageUrl: imageUrl,
-                      //   fit: BoxFit.cover,
-                      //   width: 70,
-                      //   placeholder: (context, url) =>
-                      //       CircularProgressIndicator(),
-                      //   errorWidget: (context, url, error) => Icon(Icons.error),
-                      // ),
-                    child:  Image.asset(imageUrl, width: 70),
-                  ),
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: 70,
+                        placeholder: (context, url) =>
+                            CircularProgressIndicator(),
+                        errorWidget: (context, url, error) => Icon(Icons.error),
+                      )),
                 ),
                 SizedBox(width: 15),
                 Expanded(

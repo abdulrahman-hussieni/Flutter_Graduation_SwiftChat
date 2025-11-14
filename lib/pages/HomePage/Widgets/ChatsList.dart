@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../Config/Images.dart';
-import '../../../controllers/ProfileController.dart';
-import '../../../controllers/chat_controller.dart';
-import '../../../controllers/contact_controller.dart';
-import '../../../models/chat_room_model.dart';
-import '../../chat/chatPage.dart';
-import 'ChatTile.dart';
+import 'package:graduation_swiftchat/config/images.dart';
+import 'package:graduation_swiftchat/controllers/ProfileController.dart';
+import 'package:graduation_swiftchat/controllers/chat_controller.dart';
+import 'package:graduation_swiftchat/controllers/contact_controller.dart';
+import 'package:graduation_swiftchat/models/chat_room_model.dart';
+import 'package:graduation_swiftchat/pages/HomePage/Widgets/ChatTile.dart';
+import 'package:graduation_swiftchat/pages/chat/chatPage.dart';
 
-class ChatListWidget  extends StatelessWidget {
-  const ChatListWidget ({super.key});
+class ChatList extends StatelessWidget {
+  const ChatList({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -38,21 +38,20 @@ class ChatListWidget  extends StatelessWidget {
                 Get.to(
                   ChatPage(
                     userModel: (e[index].receiver!.id ==
-                        profileController.currentUser.value?.id
+                            profileController.currentUser.value!.id
                         ? e[index].sender
                         : e[index].receiver)!,
                   ),
                 );
               },
               child: ChatTile(
-                imageUrl: AssetsImage.boyPic,
-                // imageUrl: (e[index].receiver!.id ==
-                //     profileController.currentUser.value?.id
-                //     ? e[index].sender!.profileImage
-                //     : e[index].receiver!.profileImage) ??
-                //     AssetsImage.connectSVG,
+                imageUrl: (e[index].receiver!.id ==
+                            profileController.currentUser.value!.id
+                        ? e[index].sender!.profileImage
+                        : e[index].receiver!.profileImage) ??
+                    AssetsImage.defaultProfileUrl,
                 name: (e[index].receiver!.id ==
-                    profileController.currentUser.value?.id
+                        profileController.currentUser.value!.id
                     ? e[index].sender!.name
                     : e[index].receiver!.name)!,
                 lastChat: e[index].lastMessage ?? "Last Message",

@@ -1,26 +1,25 @@
-// ignore_for_file: sized_box_for_whitespace, avoid_print
+// ignore_for_file: sized_box_for_whitespace
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:graduation_swiftchat/config/images.dart';
-import 'package:graduation_swiftchat/controllers/chat_controller.dart';
+import 'package:graduation_swiftchat/controllers/group_controller.dart';
 import 'package:graduation_swiftchat/controllers/image_picker_controller.dart';
-import 'package:graduation_swiftchat/models/user_model.dart';
+import 'package:graduation_swiftchat/models/group_model.dart';
 import 'package:graduation_swiftchat/widgets/imager_picker_button_sheet.dart';
 
-class TypeMessage extends StatelessWidget {
-  final UserModel userModel;
-  const TypeMessage({super.key, required this.userModel});
+class GroupTypeMessage extends StatelessWidget {
+  final GroupModel groupModel;
+  const GroupTypeMessage({super.key, required this.groupModel});
 
   @override
   Widget build(BuildContext context) {
-    ChatController chatController = Get.put(ChatController());
     TextEditingController messageController = TextEditingController();
     RxString message = "".obs;
     ImagePickerController imagePickerController =
         Get.put(ImagePickerController());
-
+    GroupController groupController = Get.put(GroupController());
     return Container(
       // margin: EdgeInsets.all(10),
       padding: EdgeInsets.symmetric(vertical: 5, horizontal: 15),
@@ -42,15 +41,6 @@ class TypeMessage extends StatelessWidget {
             child: TextField(
               onChanged: (value) {
                 message.value = value;
-                print("typing...");
-                if (value.isNotEmpty) {
-                  print("typing...");
-                } else {
-                  print("not typing");
-                }
-              },
-              onEditingComplete: () {
-                print("onEditingComplete");
               },
               controller: messageController,
               decoration: const InputDecoration(
@@ -59,12 +49,12 @@ class TypeMessage extends StatelessWidget {
           ),
           SizedBox(width: 10),
           Obx(
-            () => chatController.selectedImagePath.value == ""
+            () => groupController.selectedImagePath.value == ""
                 ? InkWell(
                     onTap: () {
                       ImagePickerBottomSheet(
                           context,
-                          chatController.selectedImagePath,
+                          groupController.selectedImagePath,
                           imagePickerController);
                     },
                     child: Container(
@@ -81,23 +71,23 @@ class TypeMessage extends StatelessWidget {
           SizedBox(width: 10),
           Obx(
             () => message.value != "" ||
-                    chatController.selectedImagePath.value != ""
+                    groupController.selectedImagePath.value != ""
                 ? InkWell(
                     splashColor: Colors.transparent,
                     highlightColor: Colors.transparent,
                     onTap: () {
-                      if (messageController.text.isNotEmpty ||
-                          chatController.selectedImagePath.value.isNotEmpty) {
-                        chatController.sendMessage(
-                            userModel.id!, messageController.text, userModel);
-                        messageController.clear();
-                        message.value = "";
-                      }
+                      groupController.sendGroupMessage(
+                        messageController.text,
+                        groupModel.id!,
+                        "",
+                      );
+                      messageController.clear();
+                      message.value = "";
                     },
                     child: Container(
                       width: 30,
                       height: 30,
-                      child: chatController.isLoading.value
+                      child: groupController.isLoading.value
                           ? CircularProgressIndicator()
                           : SvgPicture.asset(
                               AssetsImage.chatSendSvg,

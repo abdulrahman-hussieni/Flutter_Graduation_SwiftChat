@@ -1,177 +1,151 @@
-// ignore_for_file: unnecessary_import, deprecated_member_use
+// ignore_for_file: unused_local_variable, sized_box_for_whitespace, deprecated_member_use
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
+import 'package:graduation_swiftchat/config/images.dart';
 import 'package:graduation_swiftchat/controllers/ProfileController.dart';
 
-class UserInfo extends StatelessWidget {
-  const UserInfo({super.key});
+
+class LoginUserInfo extends StatelessWidget {
+  final String profileImage;
+  final String userName;
+  final String userEmail;
+  const LoginUserInfo(
+      {super.key,
+      required this.profileImage,
+      required this.userName,
+      required this.userEmail});
 
   @override
   Widget build(BuildContext context) {
     ProfileController profileController = Get.put(ProfileController());
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(30),
+      padding: EdgeInsets.all(20),
+      // height: 100,
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(10),
+        color: Theme.of(context).colorScheme.primaryContainer,
       ),
-      child: Column(
+      child: Row(
         children: [
-          // Profile Image with border
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: colorScheme.primary, width: 3),
-            ),
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colorScheme.primary.withOpacity(0.2),
-              ),
-              child: ClipOval(
-                child: Image.network(
-                  'https://avatar.iran.liara.run/public/boy',
-                  fit: BoxFit.cover,
-                  cacheWidth: 200,
-                  cacheHeight: 200,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.person,
-                      size: 50,
-                      color: colorScheme.onPrimaryContainer,
-                    );
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colorScheme.primary,
+          Expanded(
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 150,
+                      height: 150,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: CachedNetworkImage(
+                          imageUrl: profileImage,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) =>
+                              CircularProgressIndicator(),
+                          errorWidget: (context, url, error) =>
+                              Icon(Icons.error),
+                        ),
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
-              ),
+                SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      userName,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      userEmail,
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Container(
+                      height: 50,
+                      padding: EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: Theme.of(context).colorScheme.background,
+                      ),
+                      child: Row(children: [
+                        SvgPicture.asset(
+                          AssetsImage.profileAudioCall,
+                          width: 25,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          "Call",
+                          style: TextStyle(
+                            color: Color(0xff039C00),
+                          ),
+                        )
+                      ]),
+                    ),
+                    Container(
+                      height: 50,
+                      padding: EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: Theme.of(context).colorScheme.background,
+                      ),
+                      child: Row(children: [
+                        SvgPicture.asset(
+                          AssetsImage.profileVideoCall,
+                          width: 25,
+                          color: Color(0xffFF9900),
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          "Video",
+                          style: TextStyle(
+                            color: Color(0xffFF9900),
+                          ),
+                        )
+                      ]),
+                    ),
+                    Container(
+                      height: 50,
+                      padding: EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: Theme.of(context).colorScheme.background,
+                      ),
+                      child: Row(children: [
+                        SvgPicture.asset(
+                          AssetsImage.appIconSVG,
+                          width: 25,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          "Chat",
+                          style: TextStyle(
+                            color: Color(0xff0057FF),
+                          ),
+                        )
+                      ]),
+                    )
+                  ],
+                )
+              ],
             ),
-          ),
-          const SizedBox(height: 20),
-
-          // Name
-          Obx(
-            () => Text(
-              profileController.currentUser.value?.name ?? 'User',
-              style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Email
-          Obx(
-            () => Text(
-              profileController.currentUser.value?.email ?? 'Email',
-              style: textTheme.labelLarge?.copyWith(
-                color: colorScheme.onPrimaryContainer.withOpacity(0.7),
-              ),
-            ),
-          ),
-          const SizedBox(height: 30),
-
-          // Action Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: _buildActionButton(
-                    context,
-                    icon: Icons.call,
-                    label: 'Call',
-                    color: Colors.green,
-                    onTap: () {},
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: _buildActionButton(
-                    context,
-                    icon: Icons.videocam,
-                    label: 'Video',
-                    color: Colors.orange,
-                    onTap: () {},
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: _buildActionButton(
-                    context,
-                    icon: Icons.chat,
-                    label: 'Chat',
-                    color: Colors.blue,
-                    onTap: () {},
-                  ),
-                ),
-              ),
-            ],
-          ),
+          )
         ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(height: 4),
-            Flexible(
-              child: Text(
-                label,
-                style: textTheme.labelSmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

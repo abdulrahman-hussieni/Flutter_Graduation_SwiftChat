@@ -1,44 +1,37 @@
-// ignore_for_file: unused_local_variable, avoid_unnecessary_containers
+// ignore_for_file: avoid_unnecessary_containers
 
 import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:graduation_swiftchat/controllers/CallController.dart';
-import 'package:graduation_swiftchat/pages/CallPage/AudioCallPage.dart';
-import 'package:graduation_swiftchat/pages/CallPage/VideoCallPage.dart';
-import 'package:graduation_swiftchat/pages/UserProfile/ProfilePage.dart';
+import 'package:graduation_swiftchat/pages/GroupChat/GroupTypeMessage.dart';
+import 'package:graduation_swiftchat/pages/GroupInfo/GroupInfo.dart';
 import 'package:graduation_swiftchat/pages/chat/widgets/chatbubble.dart';
-import 'package:graduation_swiftchat/pages/chat/widgets/type_message.dart';
 import 'package:intl/intl.dart';
 import 'package:graduation_swiftchat/config/images.dart';
 import 'package:graduation_swiftchat/controllers/ProfileController.dart';
-import 'package:graduation_swiftchat/controllers/chat_controller.dart';
-import 'package:graduation_swiftchat/controllers/image_picker_controller.dart';
-import 'package:graduation_swiftchat/models/user_model.dart';
-import 'package:graduation_swiftchat/widgets/imager_picker_button_sheet.dart';
+import 'package:graduation_swiftchat/controllers/group_controller.dart';
+import 'package:graduation_swiftchat/models/group_model.dart';
 
 
-class ChatPage extends StatelessWidget {
-  final UserModel userModel;
-  const ChatPage({super.key, required this.userModel});
+class GroupChatPage extends StatelessWidget {
+  final GroupModel groupModel;
+  const GroupChatPage({super.key, required this.groupModel});
 
   @override
   Widget build(BuildContext context) {
-    ChatController chatController = Get.put(ChatController());
-    TextEditingController messageController = TextEditingController();
+    GroupController groupController = Get.put(GroupController());
     ProfileController profileController = Get.put(ProfileController());
-    CallController callController = Get.put(CallController());
+
     return Scaffold(
       appBar: AppBar(
         leading: InkWell(
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
           onTap: () {
-            Get.to(UserProfilePage(
-              userModel: userModel,
-            ));
+            // Get.to(UserProfilePage(
+            //   userModel: userModel,
+            // ));
           },
           child: Padding(
             padding: const EdgeInsets.all(5),
@@ -46,8 +39,9 @@ class ChatPage extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(100),
                 child: CachedNetworkImage(
-                  imageUrl:
-                      userModel.profileImage ?? AssetsImage.defaultProfileUrl,
+                  imageUrl: groupModel.profileUrl == ""
+                      ? AssetsImage.defaultProfileUrl
+                      : groupModel.profileUrl!,
                   fit: BoxFit.cover,
                   placeholder: (context, url) => CircularProgressIndicator(),
                   errorWidget: (context, url, error) => Icon(Icons.error),
@@ -60,8 +54,8 @@ class ChatPage extends StatelessWidget {
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
           onTap: () {
-            Get.to(UserProfilePage(
-              userModel: userModel,
+            Get.to(GroupInfo(
+              groupModel: groupModel,
             ));
           },
           child: Row(
@@ -69,26 +63,12 @@ class ChatPage extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(userModel.name ?? "User",
+                  Text(groupModel.name ?? "Group Name",
                       style: Theme.of(context).textTheme.bodyLarge),
-                  StreamBuilder(
-                    stream: chatController.getStatus(userModel.id!),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Text("........");
-                      } else {
-                        return Text(
-                          snapshot.data!.status ?? "",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: snapshot.data!.status == "Online"
-                                ? Colors.green
-                                : Colors.grey,
-                          ),
-                        );
-                      }
-                    },
-                  )
+                  Text(
+                    "Online",
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
                 ],
               ),
             ],
@@ -96,21 +76,13 @@ class ChatPage extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              Get.to(AudioCallPage(target: userModel));
-              callController.callAction(
-                  userModel, profileController.currentUser.value!, "audio");
-            },
+            onPressed: () {},
             icon: Icon(
               Icons.phone,
             ),
           ),
           IconButton(
-            onPressed: () {
-              Get.to(VideoCallPage(target: userModel));
-              callController.callAction(
-                  userModel, profileController.currentUser.value!, "video");
-            },
+            onPressed: () {},
             icon: Icon(
               Icons.video_call,
             ),
@@ -125,10 +97,8 @@ class ChatPage extends StatelessWidget {
               child: Stack(
                 children: [
                   StreamBuilder(
-                    stream: chatController.getMessages(userModel.id!),
+                    stream: groupController.getGroupMessages(groupModel.id!),
                     builder: (context, snapshot) {
-                      var roomid = chatController.getRoomId(userModel.id!);
-                      chatController.markMessagesAsRead(roomid);
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(
                           child: CircularProgressIndicator(),
@@ -152,13 +122,12 @@ class ChatPage extends StatelessWidget {
                                 snapshot.data![index].timestamp!);
                             String formattedTime =
                                 DateFormat('hh:mm a').format(timestamp);
-
                             return ChatBubble(
                               message: snapshot.data![index].message!,
                               imageUrl: snapshot.data![index].imageUrl ?? "",
-                              isComming: snapshot.data![index].receiverId ==
+                              isComming: snapshot.data![index].senderId !=
                                   profileController.currentUser.value!.id,
-                              status: snapshot.data![index].readStatus!,
+                              status: "read",
                               time: formattedTime,
                             );
                           },
@@ -167,7 +136,7 @@ class ChatPage extends StatelessWidget {
                     },
                   ),
                   Obx(
-                    () => (chatController.selectedImagePath.value != "")
+                    () => (groupController.selectedImagePath.value != "")
                         ? Positioned(
                             bottom: 0,
                             left: 0,
@@ -179,7 +148,7 @@ class ChatPage extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     image: DecorationImage(
                                       image: FileImage(
-                                        File(chatController
+                                        File(groupController
                                             .selectedImagePath.value),
                                       ),
                                       fit: BoxFit.contain,
@@ -195,7 +164,7 @@ class ChatPage extends StatelessWidget {
                                   right: 0,
                                   child: IconButton(
                                     onPressed: () {
-                                      chatController.selectedImagePath.value =
+                                      groupController.selectedImagePath.value =
                                           "";
                                     },
                                     icon: Icon(Icons.close),
@@ -209,8 +178,8 @@ class ChatPage extends StatelessWidget {
                 ],
               ),
             ),
-            TypeMessage(
-              userModel: userModel,
+            GroupTypeMessage(
+              groupModel: groupModel,
             ),
           ],
         ),

@@ -1,9 +1,10 @@
+// ignore_for_file: avoid_print, unnecessary_null_comparison, unnecessary_brace_in_string_interps
+
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:graduation_swiftchat/models/user_model.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -74,4 +75,21 @@ class ProfileController extends GetxController {
       return "";
     }
   }
+  // Future<String> uploadFileToFirebase(String imagePath) async {
+  //   final path = "files/${imagePath}";
+  //   final file = File(imagePath);
+  //   if (imagePath != "") {
+  //     try {
+  //       final ref = store.ref().child(path).putFile(file);
+  //       final uploadTask = await ref.whenComplete(() {});
+  //       final downloadImageUrl = await uploadTask.ref.getDownloadURL();
+  //       print(downloadImageUrl);
+  //       return downloadImageUrl;
+  //     } catch (ex) {
+  //       print(ex);
+  //       return "";
+  //     }
+  //   }
+  //   return "";
+  // }
 }

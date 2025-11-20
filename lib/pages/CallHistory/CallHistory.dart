@@ -17,60 +17,81 @@ class CallHistory extends StatelessWidget {
     ChatController chatController = Get.put(ChatController());
     ProfileController profileController = Get.put(ProfileController());
     return StreamBuilder(
-        stream: chatController.getCalls(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return ListView.builder(
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                DateTime timestamp =
-                    DateTime.parse(snapshot.data![index].timestamp!);
-                String formattedTime = DateFormat('hh:mm a').format(timestamp);
-                return ListTile(
-                  leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(100),
-                      child: CachedNetworkImage(
-                        imageUrl: snapshot.data![index].callerUid ==
-                                profileController.currentUser.value!.id
-                            ? snapshot.data![index].receiverPic ?? ""
-                            : snapshot.data![index].callerPic ?? "",
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) =>
-                            CircularProgressIndicator(),
-                        errorWidget: (context, url, error) => Icon(Icons.person, size: 40),
-                      )),
-                  title: Text(
-                    snapshot.data![index].callerUid ==
+      stream: chatController.getCalls(),
+      builder: (context, snapshot) {
+        // حالة الانتظار
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        // حالة الخطأ
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        // حالة وجود بيانات
+        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          return ListView.builder(
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              DateTime timestamp = DateTime.parse(
+                snapshot.data![index].timestamp!,
+              );
+              String formattedTime = DateFormat('hh:mm a').format(timestamp);
+              return ListTile(
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(100),
+                  child: CachedNetworkImage(
+                    imageUrl:
+                        snapshot.data![index].callerUid ==
                             profileController.currentUser.value!.id
-                        ? snapshot.data![index].receiverName!
-                        : snapshot.data![index].callerName!,
-                    style: Theme.of(context).textTheme.bodyMedium,
+                        ? snapshot.data![index].receiverPic ?? ""
+                        : snapshot.data![index].callerPic ?? "",
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => CircularProgressIndicator(),
+                    errorWidget: (context, url, error) =>
+                        Icon(Icons.person, size: 40),
                   ),
-                  subtitle: Text(
-                    formattedTime,
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                  trailing: snapshot.data![index].type == "video"
-                      ? IconButton(
-                          icon: Icon(Icons.video_call),
-                          onPressed: () {},
-                        )
-                      : IconButton(
-                          icon: Icon(Icons.call),
-                          onPressed: () {},
-                        ),
-                );
-              },
-            );
-          } else {
-            return Center(
-              child: Container(
-                width: 200,
-                height: 200,
-                child: CircularProgressIndicator(),
+                ),
+                title: Text(
+                  snapshot.data![index].callerUid ==
+                          profileController.currentUser.value!.id
+                      ? snapshot.data![index].receiverName!
+                      : snapshot.data![index].callerName!,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                subtitle: Text(
+                  formattedTime,
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+                trailing: snapshot.data![index].type == "video"
+                    ? IconButton(icon: Icon(Icons.video_call), onPressed: () {})
+                    : IconButton(icon: Icon(Icons.call), onPressed: () {}),
+              );
+            },
+          );
+        }
+
+        // حالة عدم وجود مكالمات (Empty State)
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.call_outlined, size: 80, color: Colors.grey),
+              SizedBox(height: 20),
+              Text(
+                'No Call History',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
               ),
-            );
-          }
-        });
+              SizedBox(height: 10),
+              Text(
+                'Your call history will appear here',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

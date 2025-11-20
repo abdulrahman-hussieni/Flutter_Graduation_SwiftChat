@@ -23,15 +23,16 @@ class ContactController extends GetxController {
     isLoading.value = true;
     try {
       userList.clear();
-      await db.collection("users").get().then(
+      await db
+          .collection("users")
+          .get()
+          .then(
             (value) => {
-          userList.value = value.docs
-              .map(
-                (e) => UserModel.fromJson(e.data()),
-          )
-              .toList(),
-        },
-      );
+              userList.value = value.docs
+                  .map((e) => UserModel.fromJson(e.data()))
+                  .toList(),
+            },
+          );
     } catch (ex) {
       print(ex);
     }
@@ -41,36 +42,44 @@ class ContactController extends GetxController {
   Stream<List<ChatRoomModel>> getChatRoom() {
     print("🔄 Listening to chat rooms...");
 
-    return db
-        .collection('chats')
-        .orderBy("timestamp", descending: true)
-        .snapshots()
-        .map((snapshot) {
+    return db.collection('chats').snapshots().map((snapshot) {
       print("📥 Fetched ${snapshot.docs.length} chat documents from Firestore");
 
-      final chatList = snapshot.docs.map((doc) {
-        final data = doc.data();
-        print("💬 Chat doc: ${doc.id}, data: $data"); // show raw Firestore data
-        return ChatRoomModel.fromJson(data);
-      }).where((chatRoom) {
-        final currentId = auth.currentUser!.uid;
-        final isUserInChat =
-            chatRoom.sender!.id == currentId ||
+      final chatList = snapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            print("💬 Chat doc: ${doc.id}, data: $data");
+            return ChatRoomModel.fromJson(data);
+          })
+          .where((chatRoom) {
+            final currentId = auth.currentUser!.uid;
+            final isUserInChat =
+                chatRoom.sender!.id == currentId ||
                 chatRoom.receiver!.id == currentId;
 
-        if (!isUserInChat) {
-          print("⛔ Skipped chat ${chatRoom.id}, not part of current user");
-        }
-        return isUserInChat;
-      }).toList();
+            if (!isUserInChat) {
+              print("⛔ Skipped chat ${chatRoom.id}, not part of current user");
+            }
+            return isUserInChat;
+          })
+          .toList();
 
-      print("✅ Filtered chats count: ${chatList.length}");
+      // ترتيب الشاتات حسب timestamp بشكل صحيح
+      chatList.sort((a, b) {
+        try {
+          DateTime timeA = DateTime.parse(a.timestamp ?? '1970-01-01');
+          DateTime timeB = DateTime.parse(b.timestamp ?? '1970-01-01');
+          return timeB.compareTo(timeA); // الأحدث أولاً
+        } catch (e) {
+          print("⚠️ Error parsing timestamp: $e");
+          return 0;
+        }
+      });
+
+      print("✅ Filtered and sorted chats count: ${chatList.length}");
       return chatList;
     });
-
-    
   }
-
 
   // Stream<List<ChatRoomModel>> getChatRoom() async{
   //   List<ChatRoomModel> tempChatRoom = [];
@@ -88,7 +97,7 @@ class ContactController extends GetxController {
   //   return tempChatRoom;
   // }
 
- Future<void> saveContact(UserModel user) async {
+  Future<void> saveContact(UserModel user) async {
     try {
       print("💾 Saving contact: ${user.name} to user ${auth.currentUser!.uid}");
       await db
@@ -146,15 +155,11 @@ class ContactController extends GetxController {
         .doc(auth.currentUser!.uid)
         .collection("contacts")
         .snapshots()
-        .map(
-          (snapshot) {
-            print("📥 Got ${snapshot.docs.length} contacts from Firestore");
-            return snapshot.docs
-                .map(
-                  (doc) => UserModel.fromJson(doc.data()),
-                )
-                .toList();
-          },
-        );
+        .map((snapshot) {
+          print("📥 Got ${snapshot.docs.length} contacts from Firestore");
+          return snapshot.docs
+              .map((doc) => UserModel.fromJson(doc.data()))
+              .toList();
+        });
   }
 }

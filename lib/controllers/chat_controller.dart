@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:graduation_swiftchat/Config/Images.dart';
 import 'package:graduation_swiftchat/models/call_model.dart';
+import 'package:graduation_swiftchat/services/fcm_service.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
@@ -15,7 +16,6 @@ import '../models/chat_room_model.dart';
 import '../models/user_model.dart';
 import 'ProfileController.dart';
 import 'contact_controller.dart';
-
 
 class ChatController extends GetxController {
   final auth = FirebaseAuth.instance;
@@ -56,22 +56,30 @@ class ChatController extends GetxController {
   }
 
   Future<void> sendMessage(
-      String targetUserId, String message, UserModel targetUser) async {
+    String targetUserId,
+    String message,
+    UserModel targetUser,
+  ) async {
     isLoading.value = true;
     String chatId = uuid.v6();
     String roomId = getRoomId(targetUserId);
     DateTime timestamp = DateTime.now();
     String nowTime = DateFormat('hh:mm a').format(timestamp);
 
-    UserModel sender =
-        getSender(profileController.currentUser.value!, targetUser);
-    UserModel receiver =
-        getReciver(profileController.currentUser.value!, targetUser);
+    UserModel sender = getSender(
+      profileController.currentUser.value!,
+      targetUser,
+    );
+    UserModel receiver = getReciver(
+      profileController.currentUser.value!,
+      targetUser,
+    );
 
     RxString imageUrl = "".obs;
     if (selectedImagePath.value.isNotEmpty) {
-      imageUrl.value =
-          await profileController.uploadFileToLocalStorage(selectedImagePath.value);
+      imageUrl.value = await profileController.uploadFileToLocalStorage(
+        selectedImagePath.value,
+      );
     }
     var newChat = ChatModel(
       id: chatId,
@@ -81,7 +89,7 @@ class ChatController extends GetxController {
       receiverId: targetUserId,
       senderName: profileController.currentUser.value?.name,
       timestamp: DateTime.now().toString(),
-      readStatus: "unread",
+      readStatus: "sent", // ✅ تغيير من unread لـ sent
     );
 
     var roomDetails = ChatRoomModel(
@@ -99,14 +107,18 @@ class ChatController extends GetxController {
           .doc(roomId)
           .collection("messages")
           .doc(chatId)
-          .set(
-            newChat.toJson(),
-          );
+          .set(newChat.toJson());
       selectedImagePath.value = "";
-      await db.collection("chats").doc(roomId).set(
-            roomDetails.toJson(),
-          );
+      await db.collection("chats").doc(roomId).set(roomDetails.toJson());
       await contactController.saveContact(targetUser);
+
+      // 🔔 إرسال إشعار للمستقبل
+      await FCMService.sendMessageNotification(
+        receiverId: targetUserId,
+        senderName: profileController.currentUser.value?.name ?? "مستخدم",
+        messageText: message.isNotEmpty ? message : "📷 صورة",
+        senderImage: profileController.currentUser.value?.profileImage ?? "",
+      );
     } catch (e) {
       print(e);
     }
@@ -123,19 +135,15 @@ class ChatController extends GetxController {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map(
-                (doc) => ChatModel.fromJson(doc.data()),
-              )
+              .map((doc) => ChatModel.fromJson(doc.data()))
               .toList(),
         );
   }
 
   Stream<UserModel> getStatus(String uid) {
-    return db.collection('users').doc(uid).snapshots().map(
-      (event) {
-        return UserModel.fromJson(event.data()!);
-      },
-    );
+    return db.collection('users').doc(uid).snapshots().map((event) {
+      return UserModel.fromJson(event.data()!);
+    });
   }
 
   Stream<List<CallModel>> getCalls() {
@@ -147,22 +155,21 @@ class ChatController extends GetxController {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map(
-                (doc) => CallModel.fromJson(doc.data()),
-              )
+              .map((doc) => CallModel.fromJson(doc.data()))
               .toList(),
         );
   }
 
-  Stream<int> getUnreadMessageCount(
-    String roomId,
-  ) {
+  Stream<int> getUnreadMessageCount(String roomId) {
     return db
         .collection("chats")
         .doc(roomId)
         .collection("messages")
         .where("readStatus", isEqualTo: "unread")
-        .where("senderId", isNotEqualTo: profileController.currentUser.value?.id)
+        .where(
+          "senderId",
+          isNotEqualTo: profileController.currentUser.value?.id,
+        )
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
@@ -190,29 +197,43 @@ class ChatController extends GetxController {
   }
 
   // حساب status الرسالة للـ 1vs1 chat
-  Future<String> getMessageStatus(String targetUserId, String readStatus) async {
+  String getMessageStatusSync(String readStatus) {
+    // لو قرأها -> علامتين أخضر ✓✓
+    if (readStatus == 'read') {
+      return 'read';
+    }
+
+    // لو وصلت بس مشافهاش -> علامتين رصاصي ✓✓
+    if (readStatus == 'delivered') {
+      return 'delivered';
+    }
+
+    // لو لسه بتتبعت -> علامة واحدة ✓
+    return 'sent';
+  }
+
+  // تحديث status الرسالة لـ delivered لما يفتح الشات
+  Future<void> markMessagesAsDelivered(String roomId) async {
     try {
-      DocumentSnapshot userDoc = await db.collection("users").doc(targetUserId).get();
-      if (userDoc.exists) {
-        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-        String userStatus = userData['status'] ?? 'Offline';
-        
-        // لو الشخص مش online -> علامة واحدة
-        if (userStatus != 'Online') {
-          return 'sent';
-        }
-        
-        // لو online وقرأ الرسالة -> علامتين أخضر
-        if (readStatus == 'read') {
-          return 'read';
-        }
-        
-        // لو online بس مشافهاش -> علامتين رصاصي
-        return 'delivered';
+      QuerySnapshot<Map<String, dynamic>> messagesSnapshot = await db
+          .collection("chats")
+          .doc(roomId)
+          .collection("messages")
+          .where("readStatus", isEqualTo: "sent")
+          .where("receiverId", isEqualTo: auth.currentUser!.uid)
+          .get();
+
+      for (QueryDocumentSnapshot<Map<String, dynamic>> messageDoc
+          in messagesSnapshot.docs) {
+        await db
+            .collection("chats")
+            .doc(roomId)
+            .collection("messages")
+            .doc(messageDoc.id)
+            .update({"readStatus": "delivered"});
       }
     } catch (e) {
-      print("Error getting message status: $e");
+      print("Error marking messages as delivered: $e");
     }
-    return 'sent';
   }
 }

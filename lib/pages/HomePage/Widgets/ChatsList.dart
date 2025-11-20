@@ -23,12 +23,35 @@ class ChatList extends StatelessWidget {
           return Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
+          return Center(child: Text('Error: ${snapshot.error}'));
         }
+
         List<ChatRoomModel>? e = snapshot.data;
 
+        // ✅ التحقق من وجود بيانات
+        if (e == null || e.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey),
+                SizedBox(height: 20),
+                Text(
+                  'No Chats Yet',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'Start a new conversation!',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
         return ListView.builder(
-          itemCount: e!.length,
+          itemCount: e.length,
           itemBuilder: (context, index) {
             return InkWell(
               splashColor: Colors.transparent,
@@ -37,7 +60,8 @@ class ChatList extends StatelessWidget {
                 chatController.markMessagesAsRead(e[index].id!);
                 Get.to(
                   ChatPage(
-                    userModel: (e[index].receiver!.id ==
+                    userModel:
+                        (e[index].receiver!.id ==
                             profileController.currentUser.value!.id
                         ? e[index].sender
                         : e[index].receiver)!,
@@ -45,11 +69,14 @@ class ChatList extends StatelessWidget {
                 );
               },
               child: ChatTile(
-                imageUrl: (e[index].receiver!.id ==
+                imageUrl:
+                    (e[index].receiver!.id ==
                             profileController.currentUser.value!.id
                         ? e[index].sender!.profileImage
-                        : e[index].receiver!.profileImage) ?? "",
-                name: (e[index].receiver!.id ==
+                        : e[index].receiver!.profileImage) ??
+                    "",
+                name:
+                    (e[index].receiver!.id ==
                         profileController.currentUser.value!.id
                     ? e[index].sender!.name
                     : e[index].receiver!.name)!,

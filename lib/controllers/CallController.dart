@@ -8,13 +8,14 @@ import 'package:graduation_swiftchat/models/call_model.dart';
 import 'package:graduation_swiftchat/models/user_model.dart';
 import 'package:graduation_swiftchat/pages/CallPage/AudioCallPage.dart';
 import 'package:graduation_swiftchat/pages/CallPage/VideoCallPage.dart';
+import 'package:graduation_swiftchat/pages/CallPage/OutgoingCallPage.dart';
+import 'package:graduation_swiftchat/services/fcm_service.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 class CallController extends GetxController {
   final db = FirebaseFirestore.instance;
   final auth = FirebaseAuth.instance;
-  final uuid = Uuid().v4();
 
   @override
   void onInit() {
@@ -65,12 +66,17 @@ class CallController extends GetxController {
   }
 
   Future<void> callAction(
-      UserModel reciver, UserModel caller, String type) async {
-    String id = uuid;
+    UserModel reciver,
+    UserModel caller,
+    String type,
+  ) async {
+    // Generate unique call ID
+    String callId = Uuid().v4();
     DateTime timestamp = DateTime.now();
     String nowTime = DateFormat('hh:mm a').format(timestamp);
+
     var newCall = CallModel(
-      id: id,
+      id: callId,
       callerName: caller.name,
       callerPic: caller.profileImage,
       callerUid: caller.id,
@@ -79,19 +85,17 @@ class CallController extends GetxController {
       receiverPic: reciver.profileImage,
       receiverUid: reciver.id,
       receiverEmail: reciver.email,
-      status: "dialing",
+      status: "ringing", // Changed from "dialing" to "ringing"
       type: type,
       time: nowTime,
       timestamp: DateTime.now().toString(),
     );
 
     try {
-      await db
-          .collection("notification")
-          .doc(reciver.id)
-          .collection("call")
-          .doc(id)
-          .set(newCall.toJson());
+      // Create call document in calls collection for real-time status
+      await db.collection("calls").doc(callId).set(newCall.toJson());
+
+      // Save to call history for both users
       await db
           .collection("users")
           .doc(auth.currentUser!.uid)
@@ -102,11 +106,29 @@ class CallController extends GetxController {
           .doc(reciver.id)
           .collection("calls")
           .add(newCall.toJson());
-      Future.delayed(Duration(seconds: 20), () {
-        endCall(newCall);
-      });
+
+      // Send FCM notification to receiver
+      await FCMService.sendCallNotification(
+        receiverId: reciver.id!,
+        caller: caller,
+        callType: type,
+        callId: callId,
+      );
+
+      // Navigate to outgoing call page
+      Get.to(
+        () =>
+            OutgoingCallPage(receiver: reciver, callType: type, callId: callId),
+      );
     } catch (e) {
-      print(e);
+      print('❌ Error making call: $e');
+      Get.snackbar(
+        'خطأ',
+        'فشل إجراء المكالمة. حاول مرة أخرى.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 
@@ -116,9 +138,11 @@ class CallController extends GetxController {
         .doc(auth.currentUser!.uid)
         .collection("call")
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => CallModel.fromJson(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => CallModel.fromJson(doc.data()))
+              .toList(),
+        );
   }
 
   Future<void> endCall(CallModel call) async {

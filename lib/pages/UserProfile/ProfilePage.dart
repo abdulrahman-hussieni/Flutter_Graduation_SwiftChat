@@ -78,15 +78,19 @@ class UserProfilePage extends StatelessWidget {
                           size: 16,
                         ),
                         SizedBox(width: 10),
-                        Text(
-                          status == 'Online'
-                              ? 'Online now'
-                              : 'Last seen ${profileController.formatLastSeen(lastActive)}',
-                          style: TextStyle(
-                            color: status == 'Online'
-                                ? Colors.green
-                                : Colors.grey,
-                            fontSize: 14,
+                        Expanded(
+                          child: Text(
+                            status == 'Online'
+                                ? 'Online'
+                                : 'Last seen ${profileController.formatLastSeen(lastActive)}',
+                            style: TextStyle(
+                              color: status == 'Online'
+                                  ? Colors.green
+                                  : Colors.grey,
+                              fontSize: 14,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],

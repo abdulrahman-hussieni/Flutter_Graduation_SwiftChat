@@ -5,7 +5,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:graduation_swiftchat/config/images.dart';
 import 'package:graduation_swiftchat/config/srtings.dart';
-import 'package:graduation_swiftchat/controllers/AppController.dart';
+// import 'package:graduation_swiftchat/controllers/AppController.dart'; // Removed: No update dialog
 import 'package:graduation_swiftchat/controllers/CallController.dart';
 import 'package:graduation_swiftchat/controllers/ProfileController.dart';
 import 'package:graduation_swiftchat/controllers/StatusController.dart';
@@ -30,11 +30,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     TabController tabController = TabController(length: 3, vsync: this);
     ProfileController profileController = Get.put(ProfileController());
     ContactController contactController = Get.put(ContactController());
-    ImagePickerController imagePickerController =
-        Get.put(ImagePickerController());
+    ImagePickerController imagePickerController = Get.put(
+      ImagePickerController(),
+    );
     StatusController statusController = Get.put(StatusController());
     CallController callController = Get.put(CallController());
-    AppController appController = Get.put(AppController());
+    // AppController appController = Get.put(AppController()); // Removed
 
     return Scaffold(
       appBar: AppBar(
@@ -45,27 +46,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ),
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: SvgPicture.asset(
-            AssetsImage.appIconSVG,
-          ),
+          child: SvgPicture.asset(AssetsImage.appIconSVG),
         ),
         actions: [
           IconButton(
             onPressed: () {
-              appController.checkLatestVersion();
+              // Search functionality can be added here
             },
-            icon: Icon(
-              Icons.search,
-            ),
+            icon: Icon(Icons.search),
           ),
           IconButton(
             onPressed: () async {
               Get.to(ProfilePage());
             },
-            icon: Icon(
-              Icons.more_vert,
-            ),
-          )
+            icon: Icon(Icons.more_vert),
+          ),
         ],
         bottom: myTabBar(tabController: tabController, context: context),
       ),
@@ -83,11 +78,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         padding: const EdgeInsets.all(10),
         child: TabBarView(
           controller: tabController,
-          children: [
-            ChatList(),
-            GroupPage(),
-            CallHistory(),
-          ],
+          children: [ChatList(), GroupPage(), CallHistory()],
         ),
       ),
     );

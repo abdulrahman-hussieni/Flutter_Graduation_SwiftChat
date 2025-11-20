@@ -14,14 +14,14 @@ class GroupPage extends StatelessWidget {
     try {
       DateTime messageTime = DateTime.parse(timestamp);
       DateTime now = DateTime.now();
-      
+
       // لو نفس اليوم، اعرض الوقت
       if (messageTime.year == now.year &&
           messageTime.month == now.month &&
           messageTime.day == now.day) {
         return DateFormat('hh:mm a').format(messageTime);
       }
-      
+
       // لو امبارح، اعرض "Yesterday"
       DateTime yesterday = now.subtract(Duration(days: 1));
       if (messageTime.year == yesterday.year &&
@@ -29,7 +29,7 @@ class GroupPage extends StatelessWidget {
           messageTime.day == yesterday.day) {
         return "Yesterday";
       }
-      
+
       // لو أكتر من امبارح، اعرض التاريخ
       return DateFormat('dd/MM/yyyy').format(messageTime);
     } catch (e) {
@@ -47,11 +47,35 @@ class GroupPage extends StatelessWidget {
           return Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
+          return Center(child: Text('Error: ${snapshot.error}'));
         }
+
         List<GroupModel>? groups = snapshot.data;
+
+        // ✅ التحقق من وجود بيانات
+        if (groups == null || groups.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.group_outlined, size: 80, color: Colors.grey),
+                SizedBox(height: 20),
+                Text(
+                  'No Groups Yet',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'Create or join a group!',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
         return ListView.builder(
-          itemCount: groups!.length,
+          itemCount: groups.length,
           itemBuilder: (context, index) {
             return InkWell(
               onTap: () {

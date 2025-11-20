@@ -20,7 +20,6 @@ import 'package:graduation_swiftchat/controllers/image_picker_controller.dart';
 import 'package:graduation_swiftchat/models/user_model.dart';
 import 'package:graduation_swiftchat/widgets/imager_picker_button_sheet.dart';
 
-
 class ChatPage extends StatelessWidget {
   final UserModel userModel;
   const ChatPage({super.key, required this.userModel});
@@ -50,27 +49,28 @@ class ChatPage extends StatelessWidget {
               splashColor: Colors.transparent,
               highlightColor: Colors.transparent,
               onTap: () {
-                Get.to(UserProfilePage(
-                  userModel: userModel,
-                ));
+                Get.to(UserProfilePage(userModel: userModel));
               },
               child: Container(
                 width: 40,
                 height: 40,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(50),
-                  child: (userModel.profileImage != null && 
+                  child:
+                      (userModel.profileImage != null &&
                           userModel.profileImage!.startsWith('http'))
                       ? CachedNetworkImage(
                           imageUrl: userModel.profileImage!,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => CircularProgressIndicator(),
-                          errorWidget: (context, url, error) => Icon(Icons.person),
+                          placeholder: (context, url) =>
+                              CircularProgressIndicator(),
+                          errorWidget: (context, url, error) =>
+                              Icon(Icons.person),
                         )
                       : Image.asset(
                           AssetsImage.boyPic,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => 
+                          errorBuilder: (context, error, stackTrace) =>
                               Icon(Icons.person),
                         ),
                 ),
@@ -82,9 +82,7 @@ class ChatPage extends StatelessWidget {
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
           onTap: () {
-            Get.to(UserProfilePage(
-              userModel: userModel,
-            ));
+            Get.to(UserProfilePage(userModel: userModel));
           },
           child: Row(
             children: [
@@ -101,15 +99,17 @@ class ChatPage extends StatelessWidget {
                     StreamBuilder<Map<String, dynamic>>(
                       stream: profileController.getUserStatus(userModel.id!),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const Text("........");
                         } else if (snapshot.hasData) {
                           String status = snapshot.data!['status'] ?? 'Offline';
-                          String lastActive = snapshot.data!['lastActive'] ?? '';
-                          
+                          String lastActive =
+                              snapshot.data!['lastActive'] ?? '';
+
                           return Text(
-                            status == 'Online' 
-                                ? 'Online' 
+                            status == 'Online'
+                                ? 'Online'
                                 : profileController.formatLastSeen(lastActive),
                             style: TextStyle(
                               fontSize: 12,
@@ -119,10 +119,13 @@ class ChatPage extends StatelessWidget {
                             ),
                           );
                         } else {
-                          return const Text("Offline", style: TextStyle(fontSize: 12, color: Colors.grey));
+                          return const Text(
+                            "Offline",
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          );
                         }
                       },
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -134,22 +137,24 @@ class ChatPage extends StatelessWidget {
             onPressed: () {
               Get.to(AudioCallPage(target: userModel));
               callController.callAction(
-                  userModel, profileController.currentUser.value!, "audio");
+                userModel,
+                profileController.currentUser.value!,
+                "audio",
+              );
             },
-            icon: Icon(
-              Icons.phone,
-            ),
+            icon: Icon(Icons.phone),
           ),
           IconButton(
             onPressed: () {
               Get.to(VideoCallPage(target: userModel));
               callController.callAction(
-                  userModel, profileController.currentUser.value!, "video");
+                userModel,
+                profileController.currentUser.value!,
+                "video",
+              );
             },
-            icon: Icon(
-              Icons.video_call,
-            ),
-          )
+            icon: Icon(Icons.video_call),
+          ),
         ],
       ),
       body: Padding(
@@ -163,56 +168,49 @@ class ChatPage extends StatelessWidget {
                     stream: chatController.getMessages(userModel.id!),
                     builder: (context, snapshot) {
                       var roomid = chatController.getRoomId(userModel.id!);
+                      // تحديث الرسائل لـ delivered لما يفتح الشات
+                      chatController.markMessagesAsDelivered(roomid);
+                      // تحديث الرسائل لـ read لما يشوفها
                       chatController.markMessagesAsRead(roomid);
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
+                        return const Center(child: CircularProgressIndicator());
                       }
                       if (snapshot.hasError) {
-                        return Center(
-                          child: Text("Error: ${snapshot.error}"),
-                        );
+                        return Center(child: Text("Error: ${snapshot.error}"));
                       }
                       if (snapshot.data == null) {
-                        return const Center(
-                          child: Text("No Messages"),
-                        );
+                        return const Center(child: Text("No Messages"));
                       } else {
                         return ListView.builder(
                           reverse: true,
                           itemCount: snapshot.data!.length,
                           itemBuilder: (context, index) {
                             DateTime timestamp = DateTime.parse(
-                                snapshot.data![index].timestamp!);
-                            String formattedTime =
-                                DateFormat('hh:mm a').format(timestamp);
-                            
-                            bool isMyMessage = snapshot.data![index].senderId ==
-                                profileController.currentUser.value!.id;
-                            String targetUserId = isMyMessage 
-                                ? snapshot.data![index].receiverId!
-                                : snapshot.data![index].senderId!;
+                              snapshot.data![index].timestamp!,
+                            );
+                            String formattedTime = DateFormat(
+                              'hh:mm a',
+                            ).format(timestamp);
 
-                            return FutureBuilder<String>(
-                              future: isMyMessage 
-                                  ? chatController.getMessageStatus(
-                                      targetUserId,
-                                      snapshot.data![index].readStatus!
-                                    )
-                                  : Future.value('read'),
-                              builder: (context, statusSnapshot) {
-                                String messageStatus = statusSnapshot.data ?? 'sent';
-                                
-                                return ChatBubble(
-                                  message: snapshot.data![index].message!,
-                                  imageUrl: snapshot.data![index].imageUrl ?? "",
-                                  isComming: snapshot.data![index].receiverId ==
-                                      profileController.currentUser.value!.id,
-                                  status: messageStatus,
-                                  time: formattedTime,
-                                );
-                              },
+                            bool isMyMessage =
+                                snapshot.data![index].senderId ==
+                                profileController.currentUser.value!.id;
+
+                            // حساب status الرسالة
+                            String messageStatus = isMyMessage
+                                ? chatController.getMessageStatusSync(
+                                    snapshot.data![index].readStatus ?? 'sent',
+                                  )
+                                : 'read'; // الرسائل اللي جاية ليك تعتبر read
+
+                            return ChatBubble(
+                              message: snapshot.data![index].message!,
+                              imageUrl: snapshot.data![index].imageUrl ?? "",
+                              isComming:
+                                  snapshot.data![index].receiverId ==
+                                  profileController.currentUser.value!.id,
+                              status: messageStatus,
+                              time: formattedTime,
                             );
                           },
                         );
@@ -232,14 +230,17 @@ class ChatPage extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     image: DecorationImage(
                                       image: FileImage(
-                                        File(chatController
-                                            .selectedImagePath.value),
+                                        File(
+                                          chatController
+                                              .selectedImagePath
+                                              .value,
+                                        ),
                                       ),
                                       fit: BoxFit.contain,
                                     ),
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primaryContainer,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primaryContainer,
                                     borderRadius: BorderRadius.circular(15),
                                   ),
                                   height: 500,
@@ -258,13 +259,11 @@ class ChatPage extends StatelessWidget {
                             ),
                           )
                         : Container(),
-                  )
+                  ),
                 ],
               ),
             ),
-            TypeMessage(
-              userModel: userModel,
-            ),
+            TypeMessage(userModel: userModel),
           ],
         ),
       ),

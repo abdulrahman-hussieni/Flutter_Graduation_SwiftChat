@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:graduation_swiftchat/models/user_model.dart';
+import 'package:graduation_swiftchat/services/shared_preferences_service.dart';
+import 'package:graduation_swiftchat/controllers/ProfileController.dart';
 
 class AuthController extends GetxController {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -24,6 +26,20 @@ class AuthController extends GetxController {
         });
       } catch (e) {
         print("Error updating status on login: $e");
+      }
+
+      // حفظ session في SharedPreferences
+      final userDoc = await db
+          .collection("users")
+          .doc(auth.currentUser!.uid)
+          .get();
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        await SharedPreferencesService.saveLoginSession(
+          userId: auth.currentUser!.uid,
+          email: userData['email'] ?? email,
+          name: userData['name'] ?? 'User',
+        );
       }
 
       Get.snackbar(
@@ -108,6 +124,14 @@ class AuthController extends GetxController {
         password: password,
       );
       await initUserData(email, name, gender);
+
+      // حفظ session في SharedPreferences
+      await SharedPreferencesService.saveLoginSession(
+        userId: auth.currentUser!.uid,
+        email: email,
+        name: name,
+      );
+
       Get.snackbar(
         'Success',
         'Account created successfully',
@@ -128,14 +152,45 @@ class AuthController extends GetxController {
           duration: Duration(seconds: 3),
         );
       } else if (e.code == 'email-already-in-use') {
-        Get.snackbar(
-          'Error',
-          'The account already exists for that email',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: Duration(seconds: 3),
-        );
+        // Check if user exists in Firestore
+        try {
+          final userDoc = await db
+              .collection('users')
+              .where('email', isEqualTo: email)
+              .limit(1)
+              .get();
+
+          if (userDoc.docs.isEmpty) {
+            // Email exists in Auth but not in Firestore (deleted user)
+            // This is an orphaned auth account - user deleted from Firestore
+            Get.snackbar(
+              'Error',
+              'This email is already in use. If you have deleted your account, please remove it from the Firebase Console or contact support.',
+              backgroundColor: Colors.red,
+              colorText: Colors.white,
+              snackPosition: SnackPosition.BOTTOM,
+              duration: Duration(seconds: 5),
+            );
+          } else {
+            Get.snackbar(
+              'Error',
+              'An account already exists with this email',
+              backgroundColor: Colors.red,
+              colorText: Colors.white,
+              snackPosition: SnackPosition.BOTTOM,
+              duration: Duration(seconds: 3),
+            );
+          }
+        } catch (checkError) {
+          Get.snackbar(
+            'خطأ',
+            'الإيميل مسجل بالفعل',
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+            duration: Duration(seconds: 3),
+          );
+        }
       } else if (e.code == 'invalid-email') {
         Get.snackbar(
           'Error',
@@ -171,16 +226,16 @@ class AuthController extends GetxController {
   Future<void> showLogoutConfirmation() async {
     return Get.dialog(
       AlertDialog(
-        title: Text('تسجيل الخروج'),
-        content: Text('هل أنت متأكد أنك تريد تسجيل الخروج؟'),
+        title: Text('logout'),
+        content: Text('Are you sure you want to log out?'),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: Text('لا')),
+          TextButton(onPressed: () => Get.back(), child: Text('No')),
           TextButton(
             onPressed: () {
               Get.back();
               logoutUser();
             },
-            child: Text('نعم'),
+            child: Text('Yes'),
           ),
         ],
       ),
@@ -188,34 +243,51 @@ class AuthController extends GetxController {
   }
 
   Future<void> logoutUser() async {
-    // تحديث الحالة لـ Offline قبل تسجيل الخروج
+    // حفظ آخر ظهور بالدقة عند تسجيل الخروج
     try {
+      final now = DateTime.now();
       await db.collection("users").doc(auth.currentUser!.uid).update({
         'status': 'Offline',
         'Status': 'Offline',
-        'lastActive': DateTime.now().toString(),
-        'LastOnlineStatus': DateTime.now().toString(),
+        'lastActive': now.toString(),
+        'LastOnlineStatus': now.toString(),
+        'lastSeenTimestamp': now.millisecondsSinceEpoch, // بالمليسيكند
       });
+      print("✏️ Last seen saved: $now");
     } catch (e) {
       print("Error updating status on logout: $e");
     }
+
+    // حذف session من SharedPreferences
+    await SharedPreferencesService.clearLoginSession();
+
+    // 🔥 حذف جميع الـ Controllers القديمة
+    Get.delete<ProfileController>(force: true);
+    Get.delete<AuthController>(force: true);
+
     await auth.signOut();
     Get.offAllNamed("/authPage");
   }
 
   Future<void> logOut() async {
     try {
-      // تحديث الحالة لـ Offline قبل تسجيل الخروج
+      // حفظ آخر ظهور بالدقة عند تسجيل الخروج
       try {
+        final now = DateTime.now();
         await db.collection("users").doc(auth.currentUser!.uid).update({
           'status': 'Offline',
           'Status': 'Offline',
-          'lastActive': DateTime.now().toString(),
-          'LastOnlineStatus': DateTime.now().toString(),
+          'lastActive': now.toString(),
+          'LastOnlineStatus': now.toString(),
+          'lastSeenTimestamp': now.millisecondsSinceEpoch, // بالمليسيكند
         });
+        print("✏️ Last seen saved: $now");
       } catch (e) {
         print("Error updating status on logout: $e");
       }
+
+      // حذف session من SharedPreferences
+      await SharedPreferencesService.clearLoginSession();
 
       await auth.signOut();
       Get.snackbar(

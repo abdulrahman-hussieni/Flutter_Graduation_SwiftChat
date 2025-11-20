@@ -18,7 +18,7 @@ class ProfileController extends GetxController {
   RxBool isLoading = false.obs;
 
   Rx<UserModel?> currentUser = UserModel().obs;
-  
+
   // مراقبة حالة النت
   final Connectivity _connectivity = Connectivity();
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
@@ -28,30 +28,32 @@ class ProfileController extends GetxController {
   void onInit() async {
     super.onInit();
     await getUserDetails();
-    
+
     // بدء مراقبة حالة النت
     _startConnectivityListener();
-    
+
     // تحديث حالة المستخدم لـ Online عند فتح التطبيق
     await updateUserStatus(isOnline: true);
   }
-  
+
   @override
   void onClose() {
     _connectivitySubscription.cancel();
     super.onClose();
   }
-  
+
   // مراقبة حالة النت بشكل مستمر
   void _startConnectivityListener() {
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) async {
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((
+      List<ConnectivityResult> results,
+    ) async {
       // Check if any connection exists
-      bool hasConnection = results.any((result) => 
-        result != ConnectivityResult.none
+      bool hasConnection = results.any(
+        (result) => result != ConnectivityResult.none,
       );
-      
+
       isConnectedToInternet.value = hasConnection;
-      
+
       if (auth.currentUser != null) {
         if (hasConnection) {
           print("✅ Internet connected - Setting Online");
@@ -78,19 +80,29 @@ class ProfileController extends GetxController {
   ) async {
     isLoading.value = true;
     try {
-      final imageLink = await uploadFileToLocalStorage(imageUrl);
+      // Only upload new image if imageUrl is provided
+      String imageLink = currentUser.value!.profileImage ?? "";
+
+      if (imageUrl.isNotEmpty) {
+        imageLink = await uploadFileToLocalStorage(imageUrl);
+      }
+
       final updatedUser = UserModel(
         id: auth.currentUser!.uid,
         email: auth.currentUser!.email,
         name: name,
         about: about,
-        profileImage:
-            imageUrl == "" ? currentUser.value!.profileImage : imageLink,
+        profileImage: imageLink,
         phoneNumber: number,
+        gender: currentUser.value!.gender, // Preserve gender
+        status: currentUser.value!.status, // Preserve status
+        lastOnlineStatus:
+            currentUser.value!.lastOnlineStatus, // Preserve lastOnlineStatus
       );
-      await db.collection("users").doc(auth.currentUser!.uid).set(
-        updatedUser.toJson(),
-      );
+      await db
+          .collection("users")
+          .doc(auth.currentUser!.uid)
+          .set(updatedUser.toJson());
       await getUserDetails();
     } catch (ex) {
       print(ex);
@@ -100,32 +112,32 @@ class ProfileController extends GetxController {
 
   Future<String> uploadFileToLocalStorage(String imageUrl) async {
     try {
-      String imagePath = imageUrl;
-      if (imageUrl.isEmpty) {
-        // Pick image from local storage
-        final imagePickerController = Get.put(ImagePickerController());
-        imagePath = await imagePickerController.pickImage(ImageSource.gallery);
-      }
-      // If imagePath is not empty, return it as the local file path
-      if (imagePath != null && imagePath.isNotEmpty) {
-        return imagePath;
+      // This method should only be called when there's an actual image to upload
+      // It should NOT open image picker - that's the UI's responsibility
+      if (imageUrl.isNotEmpty) {
+        return imageUrl;
       }
       return "";
     } catch (e) {
-      // If no image selected, return empty string
       return "";
     }
   }
+
   // تحديث حالة المستخدم (Online/Offline)
   Future<void> updateUserStatus({required bool isOnline}) async {
     try {
+      final now = DateTime.now();
       await db.collection("users").doc(auth.currentUser!.uid).update({
         'status': isOnline ? 'Online' : 'Offline',
         'Status': isOnline ? 'Online' : 'Offline', // للتوافق مع النموذج القديم
-        'lastActive': DateTime.now().toString(),
-        'LastOnlineStatus': DateTime.now().toString(), // للتوافق مع النموذج القديم
+        'lastActive': now.toString(),
+        'LastOnlineStatus': now.toString(), // للتوافق مع النموذج القديم
+        'lastSeenTimestamp':
+            now.millisecondsSinceEpoch, // آخر ظهور بالميليسيكند
       });
-      print("📱 Status updated: ${isOnline ? 'Online' : 'Offline'}");
+      print(
+        "📱 Status updated: ${isOnline ? 'Online' : 'Offline'} - Last seen: $now",
+      );
     } catch (e) {
       print("Error updating status: $e");
     }
@@ -138,17 +150,14 @@ class ProfileController extends GetxController {
         Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
         // جرب lowercase أولاً، لو مش موجود استخدم PascalCase
         String status = data['status'] ?? data['Status'] ?? 'Offline';
-        String lastActive = data['lastActive'] ?? data['LastOnlineStatus'] ?? DateTime.now().toString();
-        
-        return {
-          'status': status,
-          'lastActive': lastActive,
-        };
+        String lastActive =
+            data['lastActive'] ??
+            data['LastOnlineStatus'] ??
+            DateTime.now().toString();
+
+        return {'status': status, 'lastActive': lastActive};
       }
-      return {
-        'status': 'Offline',
-        'lastActive': DateTime.now().toString(),
-      };
+      return {'status': 'Offline', 'lastActive': DateTime.now().toString()};
     });
   }
 
@@ -157,34 +166,36 @@ class ProfileController extends GetxController {
     try {
       DateTime lastActive = DateTime.parse(lastActiveString);
       DateTime now = DateTime.now();
-      
+
       // استخراج الوقت بتنسيق 12 ساعة
       String formattedTime = _formatTime(lastActive);
-      
+
       // حساب الفرق
       Duration difference = now.difference(lastActive);
-      
-      // لو أقل من ساعة
+
+      // لو أقل من دقيقة
       if (difference.inMinutes < 1) {
         return "Just now";
-      } else if (difference.inMinutes < 60) {
+      }
+
+      // لو أقل من ساعة (عرض الدقائق)
+      if (difference.inHours < 1) {
         return "${difference.inMinutes} minutes ago";
       }
-      
-      // لو نفس اليوم (أكثر من ساعة)
+
+      // لو نفس اليوم (أكثر من ساعة) → Today at 2:00 PM
       if (_isSameDay(lastActive, now)) {
         return "Today at $formattedTime";
       }
-      
-      // لو امبارح
+
+      // لو امبارح → Yesterday at 2:00 PM
       DateTime yesterday = now.subtract(Duration(days: 1));
       if (_isSameDay(lastActive, yesterday)) {
         return "Yesterday at $formattedTime";
       }
-      
-      // لو يوم تاني (اعرض التاريخ)
-      return _formatDate(lastActive) + " at $formattedTime";
-      
+
+      // لو يوم تاني → 19 Oct at 2:00 PM
+      return "${_formatDate(lastActive)} at $formattedTime";
     } catch (e) {
       return "Recently";
     }
@@ -193,8 +204,8 @@ class ProfileController extends GetxController {
   // فحص لو نفس اليوم
   bool _isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
-           date1.month == date2.month &&
-           date1.day == date2.day;
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 
   // تنسيق الوقت (12 ساعة)
@@ -202,14 +213,14 @@ class ProfileController extends GetxController {
     int hour = dateTime.hour;
     int minute = dateTime.minute;
     String period = hour >= 12 ? 'PM' : 'AM';
-    
+
     // تحويل لـ 12 ساعة
     if (hour > 12) {
       hour -= 12;
     } else if (hour == 0) {
       hour = 12;
     }
-    
+
     String minuteStr = minute.toString().padLeft(2, '0');
     return "$hour:$minuteStr $period";
   }
@@ -217,10 +228,20 @@ class ProfileController extends GetxController {
   // تنسيق التاريخ (مثل: 19 Oct)
   String _formatDate(DateTime dateTime) {
     List<String> months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
-    
+
     return "${dateTime.day} ${months[dateTime.month - 1]}";
   }
 

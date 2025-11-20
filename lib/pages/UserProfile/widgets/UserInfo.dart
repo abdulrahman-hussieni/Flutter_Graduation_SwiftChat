@@ -7,16 +7,24 @@ import 'package:get/get.dart';
 import 'package:graduation_swiftchat/config/images.dart';
 import 'package:graduation_swiftchat/controllers/ProfileController.dart';
 
-
 class LoginUserInfo extends StatelessWidget {
   final String profileImage;
   final String userName;
   final String userEmail;
-  const LoginUserInfo(
-      {super.key,
-      required this.profileImage,
-      required this.userName,
-      required this.userEmail});
+  final String? gender;
+  final VoidCallback? onAudioCall;
+  final VoidCallback? onVideoCall;
+  final VoidCallback? onChat;
+  const LoginUserInfo({
+    super.key,
+    required this.profileImage,
+    required this.userName,
+    required this.userEmail,
+    this.gender,
+    this.onAudioCall,
+    this.onVideoCall,
+    this.onChat,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,16 +47,33 @@ class LoginUserInfo extends StatelessWidget {
                     Container(
                       width: 150,
                       height: 150,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(100),
+                      ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(100),
-                        child: CachedNetworkImage(
-                          imageUrl: profileImage,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              CircularProgressIndicator(),
-                          errorWidget: (context, url, error) =>
-                              Icon(Icons.error),
-                        ),
+                        child:
+                            (profileImage.isNotEmpty &&
+                                (profileImage.startsWith('http://') ||
+                                    profileImage.startsWith('https://')))
+                            ? CachedNetworkImage(
+                                imageUrl: profileImage,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) =>
+                                    CircularProgressIndicator(),
+                                errorWidget: (context, url, error) => Icon(
+                                  Icons.person,
+                                  size: 80,
+                                  color: Colors.grey[600],
+                                ),
+                              )
+                            : Image.asset(
+                                gender == 'Male'
+                                    ? AssetsImage.boyPic
+                                    : AssetsImage.girlPic,
+                                fit: BoxFit.cover,
+                              ),
                       ),
                     ),
                   ],
@@ -76,75 +101,81 @@ class LoginUserInfo extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    Container(
-                      height: 50,
-                      padding: EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
-                        color: Theme.of(context).colorScheme.background,
-                      ),
-                      child: Row(children: [
-                        SvgPicture.asset(
-                          AssetsImage.profileAudioCall,
-                          width: 25,
+                    InkWell(
+                      onTap: onAudioCall,
+                      child: Container(
+                        height: 50,
+                        padding: EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                          color: Theme.of(context).colorScheme.background,
                         ),
-                        SizedBox(width: 10),
-                        Text(
-                          "Call",
-                          style: TextStyle(
-                            color: Color(0xff039C00),
-                          ),
-                        )
-                      ]),
+                        child: Row(
+                          children: [
+                            SvgPicture.asset(
+                              AssetsImage.profileAudioCall,
+                              width: 25,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              "Call",
+                              style: TextStyle(color: Color(0xff039C00)),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    Container(
-                      height: 50,
-                      padding: EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
-                        color: Theme.of(context).colorScheme.background,
-                      ),
-                      child: Row(children: [
-                        SvgPicture.asset(
-                          AssetsImage.profileVideoCall,
-                          width: 25,
-                          color: Color(0xffFF9900),
+                    InkWell(
+                      onTap: onVideoCall,
+                      child: Container(
+                        height: 50,
+                        padding: EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                          color: Theme.of(context).colorScheme.background,
                         ),
-                        SizedBox(width: 10),
-                        Text(
-                          "Video",
-                          style: TextStyle(
-                            color: Color(0xffFF9900),
-                          ),
-                        )
-                      ]),
+                        child: Row(
+                          children: [
+                            SvgPicture.asset(
+                              AssetsImage.profileVideoCall,
+                              width: 25,
+                              color: Color(0xffFF9900),
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              "Video",
+                              style: TextStyle(color: Color(0xffFF9900)),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    Container(
-                      height: 50,
-                      padding: EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
-                        color: Theme.of(context).colorScheme.background,
-                      ),
-                      child: Row(children: [
-                        SvgPicture.asset(
-                          AssetsImage.appIconSVG,
-                          width: 25,
+                    InkWell(
+                      onTap: onChat,
+                      child: Container(
+                        height: 50,
+                        padding: EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                          color: Theme.of(context).colorScheme.background,
                         ),
-                        SizedBox(width: 10),
-                        Text(
-                          "Chat",
-                          style: TextStyle(
-                            color: Color(0xff0057FF),
-                          ),
-                        )
-                      ]),
-                    )
+                        child: Row(
+                          children: [
+                            SvgPicture.asset(AssetsImage.appIconSVG, width: 25),
+                            SizedBox(width: 10),
+                            Text(
+                              "Chat",
+                              style: TextStyle(color: Color(0xff0057FF)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
-                )
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

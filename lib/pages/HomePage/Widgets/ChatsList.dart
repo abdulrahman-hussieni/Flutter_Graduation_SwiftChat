@@ -48,8 +48,7 @@ class ChatList extends StatelessWidget {
                 imageUrl: (e[index].receiver!.id ==
                             profileController.currentUser.value!.id
                         ? e[index].sender!.profileImage
-                        : e[index].receiver!.profileImage) ??
-                    AssetsImage.defaultProfileUrl,
+                        : e[index].receiver!.profileImage) ?? "",
                 name: (e[index].receiver!.id ==
                         profileController.currentUser.value!.id
                     ? e[index].sender!.name

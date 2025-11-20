@@ -9,7 +9,7 @@ class ImagePickerController extends GetxController {
     if (image != null) {
       return image.path;
     } else {
-      throw 'No image selected';
+      return ""; // لو ملغاش اختيار صورة، يرجع string فاضي
     }
   }
 }

@@ -22,6 +22,10 @@ class ChatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     ChatController chatController = Get.put(ChatController());
+    
+    // فحص لو الصورة URL ولا local asset
+    final isNetworkImage = imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+    
     return Container(
       margin: EdgeInsets.only(bottom: 10),
       padding: EdgeInsets.all(10),
@@ -39,15 +43,17 @@ class ChatTile extends StatelessWidget {
                   height: 70,
                   width: 70,
                   child: ClipRRect(
-                      borderRadius: BorderRadius.circular(100),
-                      child: CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        fit: BoxFit.cover,
-                        width: 70,
-                        placeholder: (context, url) =>
-                            CircularProgressIndicator(),
-                        errorWidget: (context, url, error) => Icon(Icons.error),
-                      )),
+                    borderRadius: BorderRadius.circular(100),
+                    child: isNetworkImage
+                        ? CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            fit: BoxFit.cover,
+                            width: 70,
+                            placeholder: (context, url) => CircularProgressIndicator(),
+                            errorWidget: (context, url, error) => Icon(Icons.person, size: 40),
+                          )
+                        : Icon(Icons.person, size: 40, color: Colors.grey),
+                  ),
                 ),
                 SizedBox(width: 15),
                 Expanded(
@@ -57,11 +63,14 @@ class ChatTile extends StatelessWidget {
                       Text(
                         name,
                         style: Theme.of(context).textTheme.bodyLarge,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 5),
                       Text(
                         lastChat,
                         maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelMedium,
                       ),
                     ],

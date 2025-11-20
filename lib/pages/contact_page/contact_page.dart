@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:graduation_swiftchat/pages/Groups/NewGroup/new_group.dart';
+import 'package:graduation_swiftchat/pages/contact_page/add_contact_page.dart';
 import 'package:graduation_swiftchat/pages/contact_page/widgets/contact_search.dart';
 import 'package:graduation_swiftchat/pages/contact_page/widgets/new_contact_tile.dart';
 
 
-import '../../Config/Images.dart';
+import 'package:graduation_swiftchat/config/images.dart';
 import '../../controllers/ProfileController.dart';
 import '../../controllers/contact_controller.dart';
 import '../HomePage/Widgets/ChatTile.dart';
@@ -18,8 +20,6 @@ class ContactPage extends StatelessWidget {
   Widget build(BuildContext context) {
     RxBool isSearchEnable = false.obs;
     ContactController contactController = Get.put(ContactController());
-    ProfileController profileController = Get.put(ProfileController());
-    // ChatController chatController = Get.put(ChatController());
     return Scaffold(
       appBar: AppBar(
         title: Text("Select contact"),
@@ -46,47 +46,82 @@ class ContactPage extends StatelessWidget {
             NewContactTile(
               btnName: "New contact",
               icon: Icons.person_add,
-              ontap: () {},
+              ontap: () {
+                Get.to(() => AddContactPage());
+              },
             ),
             SizedBox(height: 10),
             NewContactTile(
               btnName: "New Group",
               icon: Icons.group_add,
               ontap: () {
-                // Get.to(NewGroup());
+                Get.to(() => NewGroup());
               },
             ),
             SizedBox(height: 10),
             Row(
               children: [
-                Text("Contacts on Sampark"),
+                Text("My Contacts"),
               ],
             ),
             SizedBox(height: 10),
-            Obx(
-                  () => Column(
-                children: contactController.userList
-                    .map(
-                      (e) => InkWell(
-                    splashColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
-                    onTap: () {
-                      Get.to(ChatPage(userModel: e));
+            SizedBox(
+              height: 400,
+              child: StreamBuilder(
+                stream: contactController.getContacts(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text("Error: ${snapshot.error}"),
+                    );
+                  }
+                  
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.contacts, size: 80, color: Colors.grey),
+                          SizedBox(height: 10),
+                          Text(
+                            "No contacts yet",
+                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            "Add your first contact using the button above",
+                            style: TextStyle(color: Colors.grey),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  
+                  return ListView.builder(
+                    itemCount: snapshot.data!.length,
+                    itemBuilder: (context, index) {
+                      final contact = snapshot.data![index];
+                      return InkWell(
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        onTap: () {
+                          Get.to(() => ChatPage(userModel: contact));
+                        },
+                        child: ChatTile(
+                          imageUrl: contact.profileImage ?? "",
+                          name: contact.name ?? "User",
+                          lastChat: contact.about ?? "Hey there",
+                          lastTime: "",
+                        ),
+                      );
                     },
-                    child: ChatTile(
-                      // imageUrl:
-                      // e.profileImage ?? AssetsImage.appIconSVG, there's no storage
-                      imageUrl: AssetsImage.boyPic,
-                      name: e.name ?? "User",
-                      lastChat: e.about ?? "Hey there",
-                      lastTime: e.email ==
-                          profileController.currentUser.value!.email
-                          ? "You"
-                          : "",
-                    ),
-                  ),
-                )
-                    .toList(),
+                  );
+                },
               ),
             )
           ],

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:graduation_swiftchat/config/images.dart';
 import 'package:graduation_swiftchat/controllers/AuthController.dart';
 import 'package:graduation_swiftchat/controllers/ProfileController.dart';
 import 'package:graduation_swiftchat/controllers/image_picker_controller.dart';
@@ -15,16 +16,21 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     RxBool isEdit = false.obs;
     ProfileController profileController = Get.put(ProfileController());
-    TextEditingController name =
-        TextEditingController(text: profileController.currentUser.value!.name);
-    TextEditingController email =
-        TextEditingController(text: profileController.currentUser.value!.email);
+    TextEditingController name = TextEditingController(
+      text: profileController.currentUser.value!.name,
+    );
+    TextEditingController email = TextEditingController(
+      text: profileController.currentUser.value!.email,
+    );
     TextEditingController phone = TextEditingController(
-        text: profileController.currentUser.value?.phoneNumber);
-    TextEditingController about =
-        TextEditingController(text: profileController.currentUser.value!.about);
-    ImagePickerController imagePickerController =
-        Get.put(ImagePickerController());
+      text: profileController.currentUser.value?.phoneNumber,
+    );
+    TextEditingController about = TextEditingController(
+      text: profileController.currentUser.value!.about,
+    );
+    ImagePickerController imagePickerController = Get.put(
+      ImagePickerController(),
+    );
     RxString imagePath = "".obs;
 
     AuthController authController = Get.put(AuthController());
@@ -34,7 +40,7 @@ class ProfilePage extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: () {
-              authController.logoutUser();
+              authController.showLogoutConfirmation();
             },
             icon: Icon(Icons.logout),
           ),
@@ -75,16 +81,15 @@ class ProfilePage extends StatelessWidget {
                                         height: 200,
                                         width: 200,
                                         decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .background,
-                                          borderRadius:
-                                              BorderRadius.circular(100),
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.background,
+                                          borderRadius: BorderRadius.circular(
+                                            100,
+                                          ),
                                         ),
                                         child: imagePath.value == ""
-                                            ? Icon(
-                                                Icons.add,
-                                              )
+                                            ? Icon(Icons.add)
                                             : ClipRRect(
                                                 borderRadius:
                                                     BorderRadius.circular(100),
@@ -99,20 +104,37 @@ class ProfilePage extends StatelessWidget {
                                       height: 200,
                                       width: 200,
                                       decoration: BoxDecoration(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .background,
-                                        borderRadius:
-                                            BorderRadius.circular(100),
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.background,
+                                        borderRadius: BorderRadius.circular(
+                                          100,
+                                        ),
                                       ),
-                                      child: profileController.currentUser.value
+                                      child:
+                                          profileController
+                                                      .currentUser
+                                                      .value
                                                       ?.profileImage ==
                                                   null ||
-                                              profileController.currentUser
-                                                      .value?.profileImage ==
+                                              profileController
+                                                      .currentUser
+                                                      .value
+                                                      ?.profileImage ==
                                                   ""
-                                          ? Icon(
-                                              Icons.image,
+                                          ? ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(100),
+                                              child: Image.asset(
+                                                profileController
+                                                            .currentUser
+                                                            .value
+                                                            ?.gender ==
+                                                        'Male'
+                                                    ? AssetsImage.boyPic
+                                                    : AssetsImage.girlPic,
+                                                fit: BoxFit.cover,
+                                              ),
                                             )
                                           : ClipRRect(
                                               borderRadius:
@@ -128,9 +150,10 @@ class ProfilePage extends StatelessWidget {
                                                 errorWidget:
                                                     (context, url, error) =>
                                                         Icon(Icons.error),
-                                              )),
+                                              ),
+                                            ),
                                     ),
-                            )
+                            ),
                           ],
                         ),
                         SizedBox(height: 20),
@@ -141,9 +164,7 @@ class ProfilePage extends StatelessWidget {
                             decoration: InputDecoration(
                               filled: isEdit.value,
                               labelText: "Name",
-                              prefixIcon: Icon(
-                                Icons.person,
-                              ),
+                              prefixIcon: Icon(Icons.person),
                             ),
                           ),
                         ),
@@ -155,9 +176,7 @@ class ProfilePage extends StatelessWidget {
                             decoration: InputDecoration(
                               filled: isEdit.value,
                               labelText: "About",
-                              prefixIcon: Icon(
-                                Icons.info,
-                              ),
+                              prefixIcon: Icon(Icons.info),
                             ),
                           ),
                         ),
@@ -167,9 +186,7 @@ class ProfilePage extends StatelessWidget {
                           decoration: InputDecoration(
                             filled: isEdit.value,
                             labelText: "Email",
-                            prefixIcon: Icon(
-                              Icons.alternate_email,
-                            ),
+                            prefixIcon: Icon(Icons.alternate_email),
                           ),
                         ),
                         Obx(
@@ -179,9 +196,7 @@ class ProfilePage extends StatelessWidget {
                             decoration: InputDecoration(
                               filled: isEdit.value,
                               labelText: "Number",
-                              prefixIcon: Icon(
-                                Icons.phone,
-                              ),
+                              prefixIcon: Icon(Icons.phone),
                             ),
                           ),
                         ),
@@ -211,16 +226,16 @@ class ProfilePage extends StatelessWidget {
                                         isEdit.value = true;
                                       },
                                     ),
-                            )
+                            ),
                           ],
                         ),
                         SizedBox(height: 20),
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

@@ -12,10 +12,20 @@ class AuthController extends GetxController {
   Future<void> login(String email, String password) async {
     isLoading.value = true;
     try {
-      await auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      await auth.signInWithEmailAndPassword(email: email, password: password);
+
+      // تحديث الحالة لـ Online بعد تسجيل الدخول
+      try {
+        await db.collection("users").doc(auth.currentUser!.uid).update({
+          'status': 'Online',
+          'Status': 'Online',
+          'lastActive': DateTime.now().toString(),
+          'LastOnlineStatus': DateTime.now().toString(),
+        });
+      } catch (e) {
+        print("Error updating status on login: $e");
+      }
+
       Get.snackbar(
         'Success',
         'Logged in successfully',
@@ -39,6 +49,15 @@ class AuthController extends GetxController {
         Get.snackbar(
           'Error',
           'Wrong password provided',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: Duration(seconds: 3),
+        );
+      } else if (e.code == 'invalid-credential') {
+        Get.snackbar(
+          'Error',
+          'Invalid email or password. Please check your credentials',
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
@@ -76,14 +95,19 @@ class AuthController extends GetxController {
     isLoading.value = false;
   }
 
-  Future<void> createUser(String email, String password , String name) async {
+  Future<void> createUser(
+    String email,
+    String password,
+    String name,
+    String gender,
+  ) async {
     isLoading.value = true;
     try {
       await auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      await initUserData(email,name);
+      await initUserData(email, name, gender);
       Get.snackbar(
         'Success',
         'Account created successfully',
@@ -143,12 +167,56 @@ class AuthController extends GetxController {
     }
     isLoading.value = false;
   }
+
+  Future<void> showLogoutConfirmation() async {
+    return Get.dialog(
+      AlertDialog(
+        title: Text('تسجيل الخروج'),
+        content: Text('هل أنت متأكد أنك تريد تسجيل الخروج؟'),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: Text('لا')),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              logoutUser();
+            },
+            child: Text('نعم'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> logoutUser() async {
+    // تحديث الحالة لـ Offline قبل تسجيل الخروج
+    try {
+      await db.collection("users").doc(auth.currentUser!.uid).update({
+        'status': 'Offline',
+        'Status': 'Offline',
+        'lastActive': DateTime.now().toString(),
+        'LastOnlineStatus': DateTime.now().toString(),
+      });
+    } catch (e) {
+      print("Error updating status on logout: $e");
+    }
     await auth.signOut();
     Get.offAllNamed("/authPage");
   }
+
   Future<void> logOut() async {
     try {
+      // تحديث الحالة لـ Offline قبل تسجيل الخروج
+      try {
+        await db.collection("users").doc(auth.currentUser!.uid).update({
+          'status': 'Offline',
+          'Status': 'Offline',
+          'lastActive': DateTime.now().toString(),
+          'LastOnlineStatus': DateTime.now().toString(),
+        });
+      } catch (e) {
+        print("Error updating status on logout: $e");
+      }
+
       await auth.signOut();
       Get.snackbar(
         'Success',
@@ -171,15 +239,28 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> initUserData(String email, String name) async {
+  Future<void> initUserData(String email, String name, String gender) async {
     var newUser = UserModel(
-        email: email,
-        name: name,
-        id: auth.currentUser!.uid,
+      email: email,
+      name: name,
+      id: auth.currentUser!.uid,
+      status: 'Online',
+      lastOnlineStatus: DateTime.now().toString(),
+      gender: gender,
     );
 
     try {
-      await db.collection('users').doc( auth.currentUser!.uid).set(newUser.toJson());
+      await db
+          .collection('users')
+          .doc(auth.currentUser!.uid)
+          .set(newUser.toJson());
+      // تحديث الحالة لـ Online
+      await db.collection('users').doc(auth.currentUser!.uid).update({
+        'status': 'Online',
+        'Status': 'Online',
+        'lastActive': DateTime.now().toString(),
+        'LastOnlineStatus': DateTime.now().toString(),
+      });
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -191,5 +272,4 @@ class AuthController extends GetxController {
       );
     }
   }
-
 }

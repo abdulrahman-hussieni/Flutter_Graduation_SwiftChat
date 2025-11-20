@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:graduation_swiftchat/controllers/CallController.dart';
 import 'package:graduation_swiftchat/pages/CallPage/AudioCallPage.dart';
 import 'package:graduation_swiftchat/pages/CallPage/VideoCallPage.dart';
+import 'package:graduation_swiftchat/pages/HomePage/HomePage.dart';
 import 'package:graduation_swiftchat/pages/UserProfile/ProfilePage.dart';
 import 'package:graduation_swiftchat/pages/chat/widgets/chatbubble.dart';
 import 'package:graduation_swiftchat/pages/chat/widgets/type_message.dart';
@@ -32,29 +33,50 @@ class ChatPage extends StatelessWidget {
     CallController callController = Get.put(CallController());
     return Scaffold(
       appBar: AppBar(
-        leading: InkWell(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          onTap: () {
-            Get.to(UserProfilePage(
-              userModel: userModel,
-            ));
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(5),
-            child: Container(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(100),
-                child: CachedNetworkImage(
-                  imageUrl:
-                      userModel.profileImage ?? AssetsImage.defaultProfileUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => CircularProgressIndicator(),
-                  errorWidget: (context, url, error) => Icon(Icons.error),
+        leadingWidth: 100,
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              onPressed: () {
+                Get.to(HomePage());
+              },
+              icon: Icon(Icons.arrow_back),
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+            ),
+            SizedBox(width: 4),
+            InkWell(
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              onTap: () {
+                Get.to(UserProfilePage(
+                  userModel: userModel,
+                ));
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(50),
+                  child: (userModel.profileImage != null && 
+                          userModel.profileImage!.startsWith('http'))
+                      ? CachedNetworkImage(
+                          imageUrl: userModel.profileImage!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => CircularProgressIndicator(),
+                          errorWidget: (context, url, error) => Icon(Icons.person),
+                        )
+                      : Image.asset(
+                          AssetsImage.boyPic,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => 
+                              Icon(Icons.person),
+                        ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
         title: InkWell(
           splashColor: Colors.transparent,
@@ -66,30 +88,43 @@ class ChatPage extends StatelessWidget {
           },
           child: Row(
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(userModel.name ?? "User",
-                      style: Theme.of(context).textTheme.bodyLarge),
-                  StreamBuilder(
-                    stream: chatController.getStatus(userModel.id!),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Text("........");
-                      } else {
-                        return Text(
-                          snapshot.data!.status ?? "",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: snapshot.data!.status == "Online"
-                                ? Colors.green
-                                : Colors.grey,
-                          ),
-                        );
-                      }
-                    },
-                  )
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      userModel.name ?? "User",
+                      style: Theme.of(context).textTheme.bodyLarge,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    StreamBuilder<Map<String, dynamic>>(
+                      stream: profileController.getUserStatus(userModel.id!),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Text("........");
+                        } else if (snapshot.hasData) {
+                          String status = snapshot.data!['status'] ?? 'Offline';
+                          String lastActive = snapshot.data!['lastActive'] ?? '';
+                          
+                          return Text(
+                            status == 'Online' 
+                                ? 'Online' 
+                                : profileController.formatLastSeen(lastActive),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: status == "Online"
+                                  ? Colors.green
+                                  : Colors.grey,
+                            ),
+                          );
+                        } else {
+                          return const Text("Offline", style: TextStyle(fontSize: 12, color: Colors.grey));
+                        }
+                      },
+                    )
+                  ],
+                ),
               ),
             ],
           ),
@@ -152,14 +187,32 @@ class ChatPage extends StatelessWidget {
                                 snapshot.data![index].timestamp!);
                             String formattedTime =
                                 DateFormat('hh:mm a').format(timestamp);
+                            
+                            bool isMyMessage = snapshot.data![index].senderId ==
+                                profileController.currentUser.value!.id;
+                            String targetUserId = isMyMessage 
+                                ? snapshot.data![index].receiverId!
+                                : snapshot.data![index].senderId!;
 
-                            return ChatBubble(
-                              message: snapshot.data![index].message!,
-                              imageUrl: snapshot.data![index].imageUrl ?? "",
-                              isComming: snapshot.data![index].receiverId ==
-                                  profileController.currentUser.value!.id,
-                              status: snapshot.data![index].readStatus!,
-                              time: formattedTime,
+                            return FutureBuilder<String>(
+                              future: isMyMessage 
+                                  ? chatController.getMessageStatus(
+                                      targetUserId,
+                                      snapshot.data![index].readStatus!
+                                    )
+                                  : Future.value('read'),
+                              builder: (context, statusSnapshot) {
+                                String messageStatus = statusSnapshot.data ?? 'sent';
+                                
+                                return ChatBubble(
+                                  message: snapshot.data![index].message!,
+                                  imageUrl: snapshot.data![index].imageUrl ?? "",
+                                  isComming: snapshot.data![index].receiverId ==
+                                      profileController.currentUser.value!.id,
+                                  status: messageStatus,
+                                  time: formattedTime,
+                                );
+                              },
                             );
                           },
                         );

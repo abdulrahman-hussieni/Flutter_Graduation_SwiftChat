@@ -32,16 +32,12 @@ class CallHistory extends StatelessWidget {
                       child: CachedNetworkImage(
                         imageUrl: snapshot.data![index].callerUid ==
                                 profileController.currentUser.value!.id
-                            ? snapshot.data![index].receiverPic == null
-                                ? AssetsImage.defaultProfileUrl
-                                : snapshot.data![index].receiverPic!
-                            : snapshot.data![index].callerPic == null
-                                ? AssetsImage.defaultProfileUrl
-                                : snapshot.data![index].callerPic!,
+                            ? snapshot.data![index].receiverPic ?? ""
+                            : snapshot.data![index].callerPic ?? "",
                         fit: BoxFit.cover,
                         placeholder: (context, url) =>
                             CircularProgressIndicator(),
-                        errorWidget: (context, url, error) => Icon(Icons.error),
+                        errorWidget: (context, url, error) => Icon(Icons.person, size: 40),
                       )),
                   title: Text(
                     snapshot.data![index].callerUid ==

@@ -18,6 +18,7 @@ class _SignUpFormState extends State<SignUpForm> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool _autoValidate = false;
+  String? selectedGender;
 
   @override
   void dispose() {
@@ -116,6 +117,65 @@ class _SignUpFormState extends State<SignUpForm> {
               ),
             ),
           ),
+          const SizedBox(height: 20),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: selectedGender == null && _autoValidate
+                    ? Colors.red
+                    : Colors.grey.shade300,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Gender',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<String>(
+                        title: const Text(
+                          'Male',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        value: 'Male',
+                        groupValue: selectedGender,
+                        onChanged: (value) {
+                          setState(() {
+                            selectedGender = value;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                    Expanded(
+                      child: RadioListTile<String>(
+                        title: const Text(
+                          'Female',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        value: 'Female',
+                        groupValue: selectedGender,
+                        onChanged: (value) {
+                          setState(() {
+                            selectedGender = value;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 40),
           Obx(
             () => authController.isLoading.value
@@ -125,16 +185,28 @@ class _SignUpFormState extends State<SignUpForm> {
                     children: [
                       PrimaryButton(
                         onTap: () {
-                          if (_formKey.currentState!.validate()) {
+                          if (_formKey.currentState!.validate() &&
+                              selectedGender != null) {
                             authController.createUser(
                               emailController.text.trim(),
                               passwordController.text,
                               nameController.text.trim(),
+                              selectedGender!,
                             );
                           } else {
                             setState(() {
                               _autoValidate = true;
                             });
+                            if (selectedGender == null) {
+                              Get.snackbar(
+                                'Error',
+                                'Please select your gender',
+                                backgroundColor: Colors.red,
+                                colorText: Colors.white,
+                                snackPosition: SnackPosition.BOTTOM,
+                                duration: Duration(seconds: 2),
+                              );
+                            }
                           }
                         },
 

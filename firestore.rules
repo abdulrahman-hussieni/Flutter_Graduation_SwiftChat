@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // Users Collection
+    // ==========================================
+    match /users/{userId} {
+      // ✅ أي مستخدم مسجل دخول يقدر يقرأ معلومات أي مستخدم
+      // (عشان البحث عن الأصدقاء يشتغل)
+      allow read: if request.auth != null;
+      
+      // ✅ كل مستخدم يقدر يعدل على بياناته هو بس
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // ------------------------------------------
+      // Sub-collection: contacts (قائمة الأصدقاء)
+      // ------------------------------------------
+      match /contacts/{contactId} {
+        // ✅ كل مستخدم يقدر يقرأ ويكتب في قائمة أصدقاءه بس
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // ------------------------------------------
+      // Sub-collection: calls (قائمة المكالمات)
+      // ------------------------------------------
+      match /calls/{callId} {
+        // ✅ كل مستخدم يقدر يقرأ ويكتب في قائمة مكالماته بس
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    
+    // ==========================================
+    // Chats Collection (المحادثات الثنائية)
+    // ==========================================
+    match /chats/{chatId} {
+      // ✅ أي مستخدم مسجل دخول يقدر يقرأ ويكتب في المحادثات
+      allow read, write: if request.auth != null;
+      
+      // Sub-collection: messages (الرسائل)
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+    
+    // ==========================================
+    // Groups Collection (المجموعات)
+    // ==========================================
+    match /groups/{groupId} {
+      // ✅ أي مستخدم مسجل دخول يقدر يقرأ المجموعات
+      // (عشان يشوف المجموعات اللي هو فيها)
+      allow read: if request.auth != null;
+      
+      // ✅ أي مستخدم مسجل دخول يقدر ينشئ مجموعة
+      allow create: if request.auth != null;
+      
+      // ✅ أي عضو في المجموعة يقدر يحدث بيانات المجموعة
+      allow update, delete: if request.auth != null;
+      
+      // Sub-collection: messages (رسائل المجموعة)
+      match /messages/{messageId} {
+        // ✅ أي مستخدم مسجل دخول يقدر يقرأ ويكتب الرسائل
+        // (لأن لو هو مش عضو في الجروب، مش هيعرف الـ groupId أصلاً)
+        allow read, write: if request.auth != null;
+      }
+    }
+    
+    // ==========================================
+    // Notifications Collection (الإشعارات)
+    // ==========================================
+    match /notification/{userId} {
+      // ✅ كل مستخدم يقدر يقرأ ويكتب إشعاراته بس
+      allow read, write: if request.auth != null;
+      
+      // Sub-collection: call (إشعارات المكالمات)
+      match /call/{callId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}

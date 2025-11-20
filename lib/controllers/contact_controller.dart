@@ -90,12 +90,14 @@ class ContactController extends GetxController {
 
  Future<void> saveContact(UserModel user) async {
     try {
+      print("💾 Saving contact: ${user.name} to user ${auth.currentUser!.uid}");
       await db
           .collection("users")
           .doc(auth.currentUser!.uid)
           .collection("contacts")
           .doc(user.id)
           .set(user.toJson());
+      print("✅ Contact saved successfully!");
     } catch (ex) {
       if (kDebugMode) {
         print("Error while saving Contact" + ex.toString());
@@ -103,18 +105,56 @@ class ContactController extends GetxController {
     }
   }
 
+  Future<void> deleteContact(String userId) async {
+    try {
+      print("🗑️ Deleting contact: $userId");
+      await db
+          .collection("users")
+          .doc(auth.currentUser!.uid)
+          .collection("contacts")
+          .doc(userId)
+          .delete();
+      print("✅ Contact deleted successfully!");
+    } catch (ex) {
+      if (kDebugMode) {
+        print("Error while deleting Contact" + ex.toString());
+      }
+    }
+  }
+
+  Future<bool> isContact(String userId) async {
+    try {
+      final doc = await db
+          .collection("users")
+          .doc(auth.currentUser!.uid)
+          .collection("contacts")
+          .doc(userId)
+          .get();
+      return doc.exists;
+    } catch (ex) {
+      if (kDebugMode) {
+        print("Error checking contact: " + ex.toString());
+      }
+      return false;
+    }
+  }
+
   Stream<List<UserModel>> getContacts() {
+    print("📡 Getting contacts stream for user: ${auth.currentUser!.uid}");
     return db
         .collection("users")
         .doc(auth.currentUser!.uid)
         .collection("contacts")
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-          .map(
-            (doc) => UserModel.fromJson(doc.data()),
-      )
-          .toList(),
-    );
+          (snapshot) {
+            print("📥 Got ${snapshot.docs.length} contacts from Firestore");
+            return snapshot.docs
+                .map(
+                  (doc) => UserModel.fromJson(doc.data()),
+                )
+                .toList();
+          },
+        );
   }
 }

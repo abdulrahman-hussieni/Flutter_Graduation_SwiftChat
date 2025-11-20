@@ -45,8 +45,7 @@ class GroupInfo extends StatelessWidget {
               children: groupModel.members!
                   .map(
                     (member) => ChatTile(
-                      imageUrl:
-                          member.profileImage ?? AssetsImage.defaultProfileUrl,
+                      imageUrl: member.profileImage ?? "",
                       name: member.name!,
                       lastChat: member.email!,
                       lastTime: member.role == "admin" ? "Admin" : "User",

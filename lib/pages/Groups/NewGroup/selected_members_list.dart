@@ -26,8 +26,7 @@ class SelectedMembers extends StatelessWidget {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(100),
                           child: CachedNetworkImage(
-                            imageUrl:
-                                e.profileImage ?? AssetsImage.defaultProfileUrl,
+                            imageUrl: e.profileImage ?? "",
                             fit: BoxFit.cover,
                             placeholder: (context, url) =>
                                 CircularProgressIndicator(),

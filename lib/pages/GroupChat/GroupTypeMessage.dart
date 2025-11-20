@@ -76,11 +76,20 @@ class GroupTypeMessage extends StatelessWidget {
                     splashColor: Colors.transparent,
                     highlightColor: Colors.transparent,
                     onTap: () {
-                      groupController.sendGroupMessage(
-                        messageController.text,
-                        groupModel.id!,
-                        "",
-                      );
+                      if (groupController.selectedImagePath.value != "") {
+                        groupController.sendGroupMessage(
+                          messageController.text,
+                          groupModel.id!,
+                          groupController.selectedImagePath.value,
+                        );
+                        groupController.selectedImagePath.value = "";
+                      } else {
+                        groupController.sendGroupMessage(
+                          messageController.text,
+                          groupModel.id!,
+                          "",
+                        );
+                      }
                       messageController.clear();
                       message.value = "";
                     },

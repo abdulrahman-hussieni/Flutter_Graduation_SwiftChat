@@ -188,4 +188,31 @@ class ChatController extends GetxController {
       }
     }
   }
+
+  // حساب status الرسالة للـ 1vs1 chat
+  Future<String> getMessageStatus(String targetUserId, String readStatus) async {
+    try {
+      DocumentSnapshot userDoc = await db.collection("users").doc(targetUserId).get();
+      if (userDoc.exists) {
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        String userStatus = userData['status'] ?? 'Offline';
+        
+        // لو الشخص مش online -> علامة واحدة
+        if (userStatus != 'Online') {
+          return 'sent';
+        }
+        
+        // لو online وقرأ الرسالة -> علامتين أخضر
+        if (readStatus == 'read') {
+          return 'read';
+        }
+        
+        // لو online بس مشافهاش -> علامتين رصاصي
+        return 'delivered';
+      }
+    } catch (e) {
+      print("Error getting message status: $e");
+    }
+    return 'sent';
+  }
 }

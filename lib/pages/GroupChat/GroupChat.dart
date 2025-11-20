@@ -25,51 +25,61 @@ class GroupChatPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: InkWell(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          onTap: () {
-            // Get.to(UserProfilePage(
-            //   userModel: userModel,
-            // ));
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(5),
-            child: Container(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(100),
-                child: CachedNetworkImage(
-                  imageUrl: groupModel.profileUrl == ""
-                      ? AssetsImage.defaultProfileUrl
-                      : groupModel.profileUrl!,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => CircularProgressIndicator(),
-                  errorWidget: (context, url, error) => Icon(Icons.error),
+        leading: Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () {
+                Get.back();
+              },
+            ),
+            InkWell(
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              onTap: () {
+                Get.to(() => GroupInfo(
+                  groupModel: groupModel,
+                ));
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(100),
+                  child: (groupModel.profileUrl != null && groupModel.profileUrl!.isNotEmpty)
+                      ? CachedNetworkImage(
+                          imageUrl: groupModel.profileUrl!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => CircularProgressIndicator(),
+                          errorWidget: (context, url, error) => Icon(Icons.group, size: 30),
+                        )
+                      : Icon(Icons.group, size: 30, color: Colors.grey),
                 ),
               ),
             ),
-          ),
+          ],
         ),
+        leadingWidth: 100,
         title: InkWell(
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
           onTap: () {
-            Get.to(GroupInfo(
+            Get.to(() => GroupInfo(
               groupModel: groupModel,
             ));
           },
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(groupModel.name ?? "Group Name",
-                      style: Theme.of(context).textTheme.bodyLarge),
-                  Text(
-                    "Online",
-                    style: Theme.of(context).textTheme.labelSmall,
-                  ),
-                ],
+              Text(
+                groupModel.name ?? "Group Name",
+                style: Theme.of(context).textTheme.bodyLarge,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                "${groupModel.members?.length ?? 0} members",
+                style: Theme.of(context).textTheme.labelSmall,
               ),
             ],
           ),
@@ -122,13 +132,29 @@ class GroupChatPage extends StatelessWidget {
                                 snapshot.data![index].timestamp!);
                             String formattedTime =
                                 DateFormat('hh:mm a').format(timestamp);
-                            return ChatBubble(
-                              message: snapshot.data![index].message!,
-                              imageUrl: snapshot.data![index].imageUrl ?? "",
-                              isComming: snapshot.data![index].senderId !=
-                                  profileController.currentUser.value!.id,
-                              status: "read",
-                              time: formattedTime,
+                            
+                            bool isMyMessage = snapshot.data![index].senderId ==
+                                profileController.currentUser.value!.id;
+                            
+                            return FutureBuilder<String>(
+                              future: isMyMessage
+                                  ? groupController.getGroupMessageStatus(
+                                      groupModel.id!,
+                                      snapshot.data![index].senderId!
+                                    )
+                                  : Future.value('read'),
+                              builder: (context, statusSnapshot) {
+                                String messageStatus = statusSnapshot.data ?? 'sent';
+                                
+                                return ChatBubble(
+                                  message: snapshot.data![index].message!,
+                                  imageUrl: snapshot.data![index].imageUrl ?? "",
+                                  isComming: snapshot.data![index].senderId !=
+                                      profileController.currentUser.value!.id,
+                                  status: messageStatus,
+                                  time: formattedTime,
+                                );
+                              },
                             );
                           },
                         );

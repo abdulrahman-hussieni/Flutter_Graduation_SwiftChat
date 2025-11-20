@@ -6,7 +6,11 @@ import 'package:get/get.dart';
 import 'package:graduation_swiftchat/config/images.dart';
 import 'package:graduation_swiftchat/controllers/AuthController.dart';
 import 'package:graduation_swiftchat/controllers/ProfileController.dart';
+import 'package:graduation_swiftchat/controllers/contact_controller.dart';
 import 'package:graduation_swiftchat/models/user_model.dart';
+import 'package:graduation_swiftchat/pages/CallPage/AudioCallPage.dart';
+import 'package:graduation_swiftchat/pages/CallPage/VideoCallPage.dart';
+import 'package:graduation_swiftchat/pages/chat/chatPage.dart';
 import 'package:graduation_swiftchat/pages/UserProfile/widgets/UserInfo.dart';
 
 class UserProfilePage extends StatelessWidget {
@@ -17,6 +21,7 @@ class UserProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     AuthController authController = Get.put(AuthController());
     ProfileController profileController = Get.put(ProfileController());
+    ContactController contactController = Get.put(ContactController());
     return Scaffold(
       appBar: AppBar(
         title: Text("Profile"),
@@ -25,10 +30,8 @@ class UserProfilePage extends StatelessWidget {
             onPressed: () {
               Get.toNamed("/updateProfilePage");
             },
-            icon: Icon(
-              Icons.edit,
-            ),
-          )
+            icon: Icon(Icons.edit),
+          ),
         ],
       ),
       body: Padding(
@@ -36,18 +39,116 @@ class UserProfilePage extends StatelessWidget {
         child: Column(
           children: [
             LoginUserInfo(
-              profileImage:
-                  userModel.profileImage ?? AssetsImage.defaultProfileUrl,
+              profileImage: userModel.profileImage ?? "",
               userName: userModel.name ?? "User",
               userEmail: userModel.email ?? "",
-            ),
-            Spacer(),
-            ElevatedButton(
-              onPressed: () {
-                authController.logoutUser();
+              gender: userModel.gender,
+              onAudioCall: () {
+                Get.to(() => AudioCallPage(target: userModel));
               },
-              child: Text("Logout"),
-            )
+              onVideoCall: () {
+                Get.to(() => VideoCallPage(target: userModel));
+              },
+              onChat: () {
+                Get.to(() => ChatPage(userModel: userModel));
+              },
+            ),
+            SizedBox(height: 20),
+            // عرض حالة المستخدم وآخر ظهور
+            StreamBuilder<Map<String, dynamic>>(
+              stream: profileController.getUserStatus(userModel.id!),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  String status = snapshot.data!['status'] ?? 'Offline';
+                  String lastActive = snapshot.data!['lastActive'] ?? '';
+
+                  return Container(
+                    padding: EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          status == 'Online' ? Icons.circle : Icons.access_time,
+                          color: status == 'Online'
+                              ? Colors.green
+                              : Colors.grey,
+                          size: 16,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          status == 'Online'
+                              ? 'Online now'
+                              : 'Last seen ${profileController.formatLastSeen(lastActive)}',
+                          style: TextStyle(
+                            color: status == 'Online'
+                                ? Colors.green
+                                : Colors.grey,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return SizedBox.shrink();
+              },
+            ),
+            SizedBox(height: 20),
+            // Friend Request Button
+            FutureBuilder<bool>(
+              future: Get.find<ContactController>().isContact(userModel.id!),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return CircularProgressIndicator();
+                }
+
+                bool isContact = snapshot.data!;
+
+                return ElevatedButton.icon(
+                  onPressed: () async {
+                    if (isContact) {
+                      await Get.find<ContactController>().deleteContact(
+                        userModel.id!,
+                      );
+                      Get.snackbar(
+                        'Success',
+                        'Contact removed successfully',
+                        backgroundColor: Colors.orange,
+                        colorText: Colors.white,
+                        snackPosition: SnackPosition.BOTTOM,
+                        duration: Duration(seconds: 2),
+                      );
+                    } else {
+                      await Get.find<ContactController>().saveContact(
+                        userModel,
+                      );
+                      Get.snackbar(
+                        'Success',
+                        'Contact added successfully',
+                        backgroundColor: Colors.green,
+                        colorText: Colors.white,
+                        snackPosition: SnackPosition.BOTTOM,
+                        duration: Duration(seconds: 2),
+                      );
+                    }
+                    // Rebuild the widget to reflect changes
+                    (context as Element).markNeedsBuild();
+                  },
+                  icon: Icon(
+                    isContact ? Icons.person_remove : Icons.person_add,
+                  ),
+                  label: Text(isContact ? 'Remove Contact' : 'Add Friend'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isContact ? Colors.red : Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),

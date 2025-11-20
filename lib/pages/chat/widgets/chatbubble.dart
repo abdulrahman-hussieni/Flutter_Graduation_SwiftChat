@@ -7,7 +7,7 @@ class ChatBubble extends StatelessWidget {
   final String message;
   final bool isComming;
   final String time;
-  final String status;
+  final String status; // sent, delivered, read
   final String imageUrl;
   const ChatBubble(
       {super.key,
@@ -16,6 +16,34 @@ class ChatBubble extends StatelessWidget {
       required this.time,
       required this.status,
       required this.imageUrl});
+
+  Widget _buildStatusIcon() {
+    if (status == "read") {
+      // علامتين صح أخضر
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.done_all, size: 16, color: Colors.green),
+        ],
+      );
+    } else if (status == "delivered") {
+      // علامتين صح رصاصي
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.done_all, size: 16, color: Colors.grey),
+        ],
+      );
+    } else {
+      // علامة واحدة (sent)
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.done, size: 16, color: Colors.grey),
+        ],
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +75,31 @@ class ChatBubble extends StatelessWidget {
                       ),
               ),
               child: imageUrl == ""
-                  ? Text(message)
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(message),
+                        SizedBox(height: 5),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              time,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            if (!isComming) ...[
+                              SizedBox(width: 5),
+                              _buildStatusIcon(),
+                            ],
+                          ],
+                        ),
+                      ],
+                    )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -64,34 +116,26 @@ class ChatBubble extends StatelessWidget {
                         ),
                         message == "" ? Container() : SizedBox(height: 10),
                         message == "" ? Container() : Text(message),
-                      ],
-                    )),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment:
-                isComming ? MainAxisAlignment.start : MainAxisAlignment.end,
-            children: [
-              isComming
-                  ? Text(
-                      time,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    )
-                  : Row(
-                      children: [
-                        Text(
-                          time,
-                          style: Theme.of(context).textTheme.labelMedium,
+                        SizedBox(height: 5),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              time,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            if (!isComming) ...[
+                              SizedBox(width: 5),
+                              _buildStatusIcon(),
+                            ],
+                          ],
                         ),
-                        const SizedBox(width: 10),
-                        SvgPicture.asset(
-                          AssetsImage.chatStatusSvg,
-                          color: status == "read" ? Colors.green : Colors.grey,
-                          width: 20,
-                        )
                       ],
-                    ),
-            ],
-          )
+                    ))
         ],
       ),
     );

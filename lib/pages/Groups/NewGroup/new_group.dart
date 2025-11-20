@@ -30,7 +30,7 @@ class NewGroup extends StatelessWidget {
             if (groupController.groupMembers.isEmpty) {
               Get.snackbar("Error", "Please select atleast one member");
             } else {
-              Get.to(GroupTitle());
+              Get.to(() => GroupTitle());
             }
           },
           child: Icon(
@@ -48,7 +48,7 @@ class NewGroup extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  "Contacts on Sampark",
+                  "My Contacts",
                   style: Theme.of(context).textTheme.labelMedium,
                 ),
               ],
@@ -68,9 +68,25 @@ class NewGroup extends StatelessWidget {
                       child: Text("Error: ${snapshot.error}"),
                     );
                   }
-                  if (snapshot.data == null) {
-                    return const Center(
-                      child: Text("No Messages"),
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.contacts, size: 80, color: Colors.grey),
+                          SizedBox(height: 10),
+                          Text(
+                            "No contacts yet",
+                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            "Add contacts first to create a group",
+                            style: TextStyle(color: Colors.grey),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     );
                   } else {
                     return ListView.builder(
@@ -83,8 +99,7 @@ class NewGroup extends StatelessWidget {
                             groupController.selectMember(snapshot.data![index]);
                           },
                           child: ChatTile(
-                            imageUrl: snapshot.data![index].profileImage ??
-                                AssetsImage.defaultProfileUrl,
+                            imageUrl: snapshot.data![index].profileImage ?? "",
                             name: snapshot.data![index].name!,
                             lastChat: snapshot.data![index].about ?? "",
                             lastTime: "",

@@ -41,7 +41,7 @@ The design includes:
 ### **3.2 App Design**
 
   <tr>
-    <td><img src="Design/design.jpg" width="250"/><br/><b></b></td>
+    <td><img src="Design/design.jpg"/><br/><b></b></td>
 
   </tr>
 

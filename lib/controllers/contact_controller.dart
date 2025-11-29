@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 
 import '../models/chat_room_model.dart';
 import '../models/user_model.dart';
+import '../models/friend_request_model.dart';
 
 class ContactController extends GetxController {
   final db = FirebaseFirestore.instance;
@@ -161,5 +162,153 @@ class ContactController extends GetxController {
               .map((doc) => UserModel.fromJson(doc.data()))
               .toList();
         });
+  }
+
+  // Friend Requests additions
+  /// Send a friend request to [targetUser]. Creates a pending request under target user's friend_requests.
+  Future<void> sendFriendRequest(UserModel targetUser) async {
+    try {
+      final currentId = auth.currentUser!.uid;
+      if (currentId == targetUser.id) return; // can't send to self
+      final reqDoc = db
+          .collection('users')
+          .doc(targetUser.id)
+          .collection('friend_requests')
+          .doc(currentId);
+      final existing = await reqDoc.get();
+      if (existing.exists) {
+        // Don't overwrite accepted; allow re-send only if rejected
+        final status = existing.data()?['status'];
+        if (status == 'pending') return;
+        if (status == 'accepted') return;
+      }
+      final myUserDoc = await db.collection('users').doc(currentId).get();
+      final myUser = UserModel.fromJson(myUserDoc.data()!);
+      final request = FriendRequestModel(
+        requesterId: currentId,
+        receiverId: targetUser.id!,
+        status: 'pending',
+        timestamp: DateTime.now().toIso8601String(),
+        requesterName: myUser.name,
+        requesterImage: myUser.profileImage,
+      );
+      await reqDoc.set(request.toJson());
+    } catch (e) {
+      print('Error sending friend request: $e');
+    }
+  }
+
+  /// Cancel an outgoing friend request (delete if pending)
+  Future<void> cancelFriendRequest(String targetUserId) async {
+    try {
+      final currentId = auth.currentUser!.uid;
+      final reqDoc = db
+          .collection('users')
+          .doc(targetUserId)
+          .collection('friend_requests')
+          .doc(currentId);
+      final snap = await reqDoc.get();
+      if (snap.exists && snap.data()?['status'] == 'pending') {
+        await reqDoc.delete();
+      }
+    } catch (e) {
+      print('Error cancelling friend request: $e');
+    }
+  }
+
+  /// Accept an incoming friend request; updates status and adds each other as contacts
+  Future<void> acceptFriendRequest(UserModel requesterModel) async {
+    try {
+      final currentId = auth.currentUser!.uid;
+      final requesterId = requesterModel.id!;
+      final reqDoc = db
+          .collection('users')
+          .doc(currentId)
+          .collection('friend_requests')
+          .doc(requesterId);
+      final snap = await reqDoc.get();
+      if (!snap.exists) return;
+      if (snap.data()?['status'] != 'pending') return;
+      await reqDoc.update({'status': 'accepted'});
+      // Add contacts both sides
+      await saveContact(requesterModel);
+      // Add current user to requester's contacts
+      final myUserDoc = await db.collection('users').doc(currentId).get();
+      final myUser = UserModel.fromJson(myUserDoc.data()!);
+      await db
+          .collection('users')
+          .doc(requesterId)
+          .collection('contacts')
+          .doc(currentId)
+          .set(myUser.toJson());
+    } catch (e) {
+      print('Error accepting friend request: $e');
+    }
+  }
+
+  /// Reject an incoming friend request (update status -> rejected)
+  Future<void> rejectFriendRequest(String requesterId) async {
+    try {
+      final currentId = auth.currentUser!.uid;
+      final reqDoc = db
+          .collection('users')
+          .doc(currentId)
+          .collection('friend_requests')
+          .doc(requesterId);
+      final snap = await reqDoc.get();
+      if (!snap.exists) return;
+      if (snap.data()?['status'] != 'pending') return;
+      await reqDoc.update({'status': 'rejected'});
+    } catch (e) {
+      print('Error rejecting friend request: $e');
+    }
+  }
+
+  /// Get outgoing request status to a target user (null if none)
+  Future<String?> getOutgoingRequestStatus(String targetUserId) async {
+    try {
+      final currentId = auth.currentUser!.uid;
+      final doc = await db
+          .collection('users')
+          .doc(targetUserId)
+          .collection('friend_requests')
+          .doc(currentId)
+          .get();
+      if (!doc.exists) return null;
+      return doc.data()?['status'];
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Get incoming request status from requesterId (null if none)
+  Future<String?> getIncomingRequestStatus(String requesterId) async {
+    try {
+      final currentId = auth.currentUser!.uid;
+      final doc = await db
+          .collection('users')
+          .doc(currentId)
+          .collection('friend_requests')
+          .doc(requesterId)
+          .get();
+      if (!doc.exists) return null;
+      return doc.data()?['status'];
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Stream of pending incoming friend requests
+  Stream<List<FriendRequestModel>> getIncomingFriendRequests() {
+    final currentId = auth.currentUser!.uid;
+    return db
+        .collection('users')
+        .doc(currentId)
+        .collection('friend_requests')
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => FriendRequestModel.fromJson(d.data()))
+            .toList());
   }
 }

@@ -6,6 +6,7 @@ import 'package:graduation_swiftchat/pages/HomePage/HomePage.dart';
 import 'package:graduation_swiftchat/pages/ProfilePage/ProfilePage.dart';
 import 'package:graduation_swiftchat/pages/chat/chatPage.dart';
 import 'package:graduation_swiftchat/pages/contact_page/contact_page.dart';
+import 'package:graduation_swiftchat/pages/FriendRequests/friend_requests_page.dart';
 var pagePath=[
   GetPage(
     name: "/authPage",
@@ -30,6 +31,11 @@ var pagePath=[
   GetPage(
     name: "/contactPage",
     page: () => ContactPage(),
+    transition: Transition.rightToLeft,
+  ),
+  GetPage(
+    name: "/friendRequests",
+    page: () => FriendRequestsPage(),
     transition: Transition.rightToLeft,
   ),
 ];

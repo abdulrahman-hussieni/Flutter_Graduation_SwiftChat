@@ -55,6 +55,40 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             },
             icon: Icon(Icons.search),
           ),
+          // Friend requests badge button
+          StreamBuilder(
+            stream: contactController.getIncomingFriendRequests(),
+            builder: (context, snapshot) {
+              int pending = (snapshot.data ?? []).length;
+              return IconButton(
+                onPressed: () {
+                  Get.toNamed('/friendRequests');
+                },
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.group_add),
+                    if (pending > 0)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            pending.toString(),
+                            style: const TextStyle(fontSize: 10, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
           IconButton(
             onPressed: () async {
               Get.to(ProfilePage());

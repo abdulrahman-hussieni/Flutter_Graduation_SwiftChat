@@ -110,7 +110,8 @@ class ChatController extends GetxController {
           .set(newChat.toJson());
       selectedImagePath.value = "";
       await db.collection("chats").doc(roomId).set(roomDetails.toJson());
-      await contactController.saveContact(targetUser);
+      // Removed: auto-adding contact on first message to prevent unwanted snackbar
+      // await contactController.saveContact(targetUser);
 
       // 🔔 إرسال إشعار للمستقبل
       await FCMService.sendMessageNotification(
@@ -165,7 +166,7 @@ class ChatController extends GetxController {
         .collection("chats")
         .doc(roomId)
         .collection("messages")
-        .where("readStatus", isEqualTo: "unread")
+        .where("readStatus", whereIn: ["sent", "delivered"]) // count messages that are not yet read
         .where(
           "senderId",
           isNotEqualTo: profileController.currentUser.value?.id,
@@ -175,24 +176,52 @@ class ChatController extends GetxController {
   }
 
   Future<void> markMessagesAsRead(String roomId) async {
-    QuerySnapshot<Map<String, dynamic>> messagesSnapshot = await db
-        .collection("chats")
-        .doc(roomId)
-        .collection("messages")
-        .where("readStatus", isEqualTo: "unread")
-        .get();
+    try {
+      // Only upgrade messages that have already been delivered to read
+      QuerySnapshot<Map<String, dynamic>> messagesSnapshot = await db
+          .collection("chats")
+          .doc(roomId)
+          .collection("messages")
+          .where("receiverId", isEqualTo: auth.currentUser!.uid)
+          .where("readStatus", isEqualTo: "delivered")
+          .get();
 
-    for (QueryDocumentSnapshot<Map<String, dynamic>> messageDoc
-        in messagesSnapshot.docs) {
-      String senderId = messageDoc.data()["senderId"];
-      if (senderId != profileController.currentUser.value?.id) {
-        await db
-            .collection("chats")
-            .doc(roomId)
-            .collection("messages")
-            .doc(messageDoc.id)
-            .update({"readStatus": "read"});
+      for (QueryDocumentSnapshot<Map<String, dynamic>> messageDoc
+          in messagesSnapshot.docs) {
+        String senderId = messageDoc.data()["senderId"];
+        if (senderId != profileController.currentUser.value?.id) {
+          await db
+              .collection("chats")
+              .doc(roomId)
+              .collection("messages")
+              .doc(messageDoc.id)
+              .update({"readStatus": "read"});
+        }
       }
+    } catch (e) {
+      print("Error marking messages as read: $e");
+    }
+  }
+
+  Future<void> markMessageAsRead(String roomId, String messageId) async {
+    try {
+      final docRef = db
+          .collection("chats")
+          .doc(roomId)
+          .collection("messages")
+          .doc(messageId);
+      final doc = await docRef.get();
+      if (!doc.exists) return;
+      final data = doc.data();
+      if (data == null) return;
+      final currentStatus = data["readStatus"] ?? "";
+      final receiverId = data["receiverId"] ?? "";
+      // Only the receiver should mark it as read, and only if not already read
+      if (receiverId == auth.currentUser!.uid && currentStatus != "read") {
+        await docRef.update({"readStatus": "read"});
+      }
+    } catch (e) {
+      print("Error marking single message as read: $e");
     }
   }
 

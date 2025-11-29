@@ -20,16 +20,49 @@ import 'package:graduation_swiftchat/controllers/image_picker_controller.dart';
 import 'package:graduation_swiftchat/models/user_model.dart';
 import 'package:graduation_swiftchat/widgets/imager_picker_button_sheet.dart';
 
-class ChatPage extends StatelessWidget {
+class ChatPage extends StatefulWidget {
   final UserModel userModel;
   const ChatPage({super.key, required this.userModel});
 
   @override
+  State<ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends State<ChatPage> {
+  late ChatController chatController;
+  late ProfileController profileController;
+  late CallController callController;
+  final TextEditingController messageController = TextEditingController();
+  String? _roomId;
+
+  @override
+  void initState() {
+    super.initState();
+    chatController = Get.put(ChatController());
+    profileController = Get.put(ProfileController());
+    callController = Get.put(CallController());
+    _roomId = chatController.getRoomId(widget.userModel.id!);
+    // Mark messages as delivered immediately when opening chat (receiver side)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_roomId != null) {
+        await chatController.markMessagesAsDelivered(_roomId!);
+        // Delay read marking to allow UI to show delivered state briefly
+        Future.delayed(const Duration(seconds: 2), () {
+          chatController.markMessagesAsRead(_roomId!);
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    messageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    ChatController chatController = Get.put(ChatController());
-    TextEditingController messageController = TextEditingController();
-    ProfileController profileController = Get.put(ProfileController());
-    CallController callController = Get.put(CallController());
+    final userModel = widget.userModel;
     return Scaffold(
       appBar: AppBar(
         leadingWidth: 100,
@@ -68,7 +101,10 @@ class ChatPage extends StatelessWidget {
                               Icon(Icons.person),
                         )
                       : Image.asset(
-                          AssetsImage.boyPic,
+                          // Use gender-aware default image when no network image is available
+                          (userModel.gender != null && userModel.gender!.toLowerCase() == 'female')
+                              ? AssetsImage.girlPic
+                              : AssetsImage.boyPic,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Icon(Icons.person),
@@ -167,11 +203,11 @@ class ChatPage extends StatelessWidget {
                   StreamBuilder(
                     stream: chatController.getMessages(userModel.id!),
                     builder: (context, snapshot) {
-                      var roomid = chatController.getRoomId(userModel.id!);
-                      // تحديث الرسائل لـ delivered لما يفتح الشات
-                      chatController.markMessagesAsDelivered(roomid);
-                      // تحديث الرسائل لـ read لما يشوفها
-                      chatController.markMessagesAsRead(roomid);
+                      // Continuously update status for messages while chat is open
+                      if (_roomId != null) {
+                        chatController.markMessagesAsDelivered(_roomId!);
+                        chatController.markMessagesAsRead(_roomId!);
+                      }
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       }
@@ -196,12 +232,10 @@ class ChatPage extends StatelessWidget {
                                 snapshot.data![index].senderId ==
                                 profileController.currentUser.value!.id;
 
-                            // حساب status الرسالة
+                            String readStatus = snapshot.data![index].readStatus ?? 'sent';
                             String messageStatus = isMyMessage
-                                ? chatController.getMessageStatusSync(
-                                    snapshot.data![index].readStatus ?? 'sent',
-                                  )
-                                : 'read'; // الرسائل اللي جاية ليك تعتبر read
+                                ? chatController.getMessageStatusSync(readStatus)
+                                : readStatus; // incoming can be used for logic later
 
                             return ChatBubble(
                               message: snapshot.data![index].message!,

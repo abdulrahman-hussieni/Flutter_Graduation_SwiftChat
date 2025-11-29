@@ -18,48 +18,35 @@ class ChatBubble extends StatelessWidget {
       required this.imageUrl});
 
   Widget _buildStatusIcon() {
+    // Always two checks for delivered/read, single for sent
     if (status == "read") {
-      // علامتين صح أخضر
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.done_all, size: 16, color: Colors.green),
-        ],
-      );
-    } else if (status == "delivered") {
-      // علامتين صح رصاصي
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.done_all, size: 16, color: Colors.grey),
-        ],
-      );
-    } else {
-      // علامة واحدة (sent)
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.done, size: 16, color: Colors.grey),
-        ],
-      );
+      return Icon(Icons.done_all, size: 16, color: Colors.blue);
     }
+    if (status == "delivered") {
+      return Icon(Icons.done_all, size: 16, color: Colors.grey);
+    }
+    return Icon(Icons.done, size: 16, color: Colors.grey);
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(bottom: 20),
-      child: Column(
-        crossAxisAlignment:
-            isComming ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-        children: [
-          Container(
+      child: Align(
+        alignment: isComming ? Alignment.centerLeft : Alignment.centerRight,
+        child: Column(
+          crossAxisAlignment:
+              isComming ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+          children: [
+            Container(
               padding: EdgeInsets.all(10),
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.sizeOf(context).width / 1.3,
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
+                color: isComming
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : Theme.of(context).colorScheme.secondaryContainer,
                 borderRadius: isComming
                     ? const BorderRadius.only(
                         topLeft: Radius.circular(10),
@@ -135,8 +122,10 @@ class ChatBubble extends StatelessWidget {
                           ],
                         ),
                       ],
-                    ))
-        ],
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

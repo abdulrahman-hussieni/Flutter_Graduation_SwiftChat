@@ -41,31 +41,14 @@ The design includes:
 ### **3.2 App Screenshots**
 
 #### **Authentication Screens**
-<table>
-  <tr>
-    <td><img src="screenshots/splash.png" width="250"/><br/><b>Splash Screen</b></td>
-    <td><img src="screenshots/login.png" width="250"/><br/><b>Login Screen</b></td>
-    <td><img src="screenshots/signup.png" width="250"/><br/><b>Sign Up Screen</b></td>
-  </tr>
-</table>
 
-#### **Main Features**
-<table>
   <tr>
-    <td><img src="screenshots/home.png" width="250"/><br/><b>Home Screen</b></td>
-    <td><img src="screenshots/chat.png" width="250"/><br/><b>Chat Screen</b></td>
-    <td><img src="screenshots/profile.png" width="250"/><br/><b>Profile Screen</b></td>
-  </tr>
-</table>
+    <td><img src="design/design.jpg" width="250"/><br/><b>Splash Screen</b></td>
 
-#### **Advanced Features**
-<table>
-  <tr>
-    <td><img src="screenshots/group_chat.png" width="250"/><br/><b>Group Chat</b></td>
-    <td><img src="screenshots/media_sharing.png" width="250"/><br/><b>Media Sharing</b></td>
-    <td><img src="screenshots/settings.png" width="250"/><br/><b>Settings</b></td>
   </tr>
-</table>
+
+
+
 
 ---
 

@@ -38,12 +38,10 @@ The design includes:
 - Color scheme and typography guidelines
 - Component library for consistent UI elements
 
-### **3.2 App Screenshots**
-
-#### **Authentication Screens**
+### **3.2 App Design**
 
   <tr>
-    <td><img src="design/design.jpg" width="250"/><br/><b>Splash Screen</b></td>
+    <td><img src="Design/design.jpg" width="250"/><br/><b></b></td>
 
   </tr>
 
